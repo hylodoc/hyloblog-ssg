@@ -1,0 +1,19 @@
+ <html>
+	<head>
+		<title>{{ .Title }}</title>
+
+		<link href="https://fonts.googleapis.com/css?family=Nunito:300,400,700" rel="stylesheet">
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ajusa/lit@latest/dist/lit.css" />
+	</head>
+	<body>
+		<div class="c">
+			{{ .Content }}
+
+			{{ range .Posts }}
+			<div class="c">
+                                <h2><a href="{{ .Link }}">{{ .Title }}{{ if .Category }}</a> <small>{{ .Category }}</small>{{ end }}</h2>
+			</div>
+			{{ end }}
+		</div>
+	</body>
+</html>

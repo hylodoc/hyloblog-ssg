@@ -1,4 +1,4 @@
-package generator
+package theme
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"text/template"
 )
 
-type theme struct {
+type Theme struct {
 	index, def *template.Template
 }
 
@@ -16,7 +16,7 @@ const (
 	themeDefault = "_default.html"
 )
 
-func newTheme(dir string) (*theme, error) {
+func ParseTheme(dir string) (*Theme, error) {
 	index, err := template.ParseFiles(filepath.Join(dir, themeIndex))
 	if err != nil {
 		return nil, fmt.Errorf("cannot get index: %w", err)
@@ -25,13 +25,27 @@ func newTheme(dir string) (*theme, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot get default: %w", err)
 	}
-	return &theme{index, def}, nil
+	return &Theme{index, def}, nil
 }
 
-func (thm *theme) executeIndex(w io.Writer, data any) error {
+type IndexData struct {
+	Title, Content string
+	Posts          []Post
+}
+
+type Post struct {
+	Title, Link, Category string
+}
+
+func (thm *Theme) ExecuteIndex(w io.Writer, data *IndexData) error {
 	return thm.index.Execute(w, data)
 }
 
-func (thm *theme) executeDefault(w io.Writer, data any) error {
+type DefaultData struct {
+	Title, Content string
+	SiteTitle      string
+}
+
+func (thm *Theme) ExecuteDefault(w io.Writer, data *DefaultData) error {
 	return thm.def.Execute(w, data)
 }

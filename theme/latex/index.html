@@ -1,0 +1,17 @@
+ <html>
+	<head>
+		<title>{{ .Title }}</title>
+
+	<link rel="stylesheet" href="https://latex.vercel.app/style.css">
+	</head>
+	<body>
+		{{ .Content }}
+
+		{{ range .Posts }}
+		<div>
+			<h2><a href="{{ .Link }}">{{ .Title }}{{ if .Category }}</a> <small>{{ .Category }}</small>{{ end }}</h2>
+
+		</div>
+		{{ end }}
+	</body>
+</html>
