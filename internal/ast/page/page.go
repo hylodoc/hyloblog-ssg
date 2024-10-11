@@ -3,7 +3,9 @@ package page
 import (
 	"fmt"
 	"io"
+	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/rhinoman/go-commonmark"
@@ -12,8 +14,8 @@ import (
 )
 
 type Page struct {
-	title string
-	doc   *commonmark.CMarkNode
+	title, url string
+	doc        *commonmark.CMarkNode
 }
 
 func ParsePage(path string) (*Page, error) {
@@ -28,7 +30,11 @@ func ParsePage(path string) (*Page, error) {
 	doc := commonmark.ParseDocument(
 		components.content, commonmark.CMARK_OPT_DEFAULT,
 	)
-	return &Page{title: gettitle(doc), doc: doc}, nil
+	m, err := parsemetadata(components.metadata)
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse metadata: %w", err)
+	}
+	return &Page{title: gettitle(doc), url: m.URL, doc: doc}, nil
 }
 
 type components struct {
@@ -63,6 +69,40 @@ func gettitle(doc *commonmark.CMarkNode) string {
 		}
 	}
 	return ""
+}
+
+func (pg *Page) Link(path, rootdir string, dynamiclinks bool) (string, error) {
+	if pg.url != "" {
+		if dynamiclinks {
+			return pg.url, nil
+		}
+		log.Printf("warning: %q has custom url in static mode\n", path)
+	}
+	url, err := filepath.Rel(rootdir, rightextpath(path, dynamiclinks))
+	if err != nil {
+		return "", fmt.Errorf("cannot get relative path: %w", err)
+	}
+	return "/" + url, nil
+}
+
+func rightextpath(path string, dynamiclinks bool) string {
+	return replaceext(path, rightext(dynamiclinks))
+}
+
+func rightext(dynamiclinks bool) string {
+	if dynamiclinks {
+		return ""
+	}
+	return ".html"
+}
+
+func replaceext(path, newext string) string {
+	ext := filepath.Ext(path)
+	return path[:len(path)-len(ext)] + newext
+}
+
+func (pg *Page) customurl() (string, bool) {
+	return pg.url, len(pg.url) > 0
 }
 
 func (pg *Page) GenerateIndex(

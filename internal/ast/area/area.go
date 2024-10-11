@@ -62,16 +62,17 @@ func parse(dir, parent string, oldign *ignorer.Ignorer) (*Area, error) {
 		}
 	}
 	for _, e := range entries {
-		if ign.ShouldIgnore(e.Name()) {
+		name := e.Name()
+		if ign.ShouldIgnore(name) {
 			continue
 		}
 		if !e.IsDir() {
 			t := e.Type()
 			assert.Printf(t.IsRegular(), "unknown file type %v", t)
-			path := filepath.Join(dir, e.Name())
-			if filepath.Ext(path) != ".md" {
+			if filepath.Ext(name) != ".md" {
 				continue
 			}
+			path := filepath.Join(dir, name)
 			page, err := page.ParsePage(path)
 			if err != nil {
 				return nil, fmt.Errorf(
@@ -79,7 +80,7 @@ func parse(dir, parent string, oldign *ignorer.Ignorer) (*Area, error) {
 					path, err,
 				)
 			}
-			A.pages[e.Name()] = *page
+			A.pages[name] = *page
 		}
 	}
 	return &A, nil
@@ -168,31 +169,42 @@ func (A *Area) getposts(dir string, ainfo *areainfo.AreaInfo) []page.Post {
 		if name == indexFile {
 			continue
 		}
-		link, err := filepath.Rel(
-			ainfo.Root(), pagelink(name, dir, ainfo),
+		pg := A.pages[name]
+		link, err := pg.Link(
+			filepath.Join(dir, name),
+			ainfo.Root(),
+			ainfo.DynamicLinks(),
 		)
 		assert.Assert(err == nil)
-		p := A.pages[name]
-		posts = append(posts, *page.CreatePost(&p, A.prefix, link))
+		posts = append(posts, *page.CreatePost(&pg, A.prefix, link))
 	}
 	return posts
 }
 
-func pagelink(name, dir string, ainfo *areainfo.AreaInfo) string {
-	p := filepath.Join(dir, name)
-	if ainfo.LinksWithHtmlExt() {
-		return replaceext(p, ".html")
-	}
-	return replaceext(p, "")
+type Handler struct {
+	h         http.Handler
+	targetdir string
 }
 
-func (A *Area) Handler(target, theme string) (http.Handler, error) {
+func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h.h.ServeHTTP(w, r)
+}
+
+func (h *Handler) Destroy() error {
+	return os.RemoveAll(h.targetdir)
+}
+
+func (A *Area) Handler(theme string) (*Handler, error) {
+	target, err := os.MkdirTemp("", "")
+	if err != nil {
+		return nil, fmt.Errorf("cannot make tempdir: %w", err)
+	}
 	purpose := areainfo.PurposeDynamicServe
 	if err := A.GenerateSite(target, theme, purpose); err != nil {
 		return nil, fmt.Errorf("cannot generate site: %w", err)
 	}
 	r := mux.NewRouter()
-	return r, A.registerhandlers(
+	return &Handler{r, target}, A.registerhandlers(
 		target, areainfo.Create(theme, target, nil, purpose), r,
 	)
 }
@@ -213,30 +225,30 @@ func (A *Area) registerhandlers(
 		}
 	}
 	for name := range A.pages {
-		path, err := hostpath(name, dir, ainfo.Root())
+		pg := A.pages[name]
+		path, err := hostpath(&pg, name, dir, ainfo.Root())
 		if err != nil {
 			return fmt.Errorf(
 				"cannot make path for %q: %w", name, err,
 			)
 		}
-		url := fmt.Sprintf("/%s", path)
-		mux.HandleFunc(url, handler(name, dir))
+		mux.HandleFunc(path, handler(name, dir))
 	}
 	return nil
 }
 
-func hostpath(name, dir, rootdir string) (string, error) {
+func hostpath(pg *page.Page, name, dir, rootdir string) (string, error) {
 	if name == indexFile {
 		path, err := filepath.Rel(rootdir, dir)
 		if err != nil {
 			return "", err
 		}
 		if path == "." {
-			return "", nil
+			return "/", nil
 		}
-		return path, nil
+		return fmt.Sprintf("/%s", path), nil
 	}
-	return filepath.Rel(rootdir, replaceext(filepath.Join(dir, name), ""))
+	return pg.Link(filepath.Join(dir, name), rootdir, true)
 }
 
 func handler(name, dir string) http.HandlerFunc {
@@ -258,26 +270,22 @@ func CreateLiveHandler(src, theme string) *LiveHandler {
 }
 
 func (lh *LiveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h, target, err := lh.genhandler()
+	h, err := lh.genhandler()
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer os.RemoveAll(target)
+	defer h.Destroy()
 	h.ServeHTTP(w, r)
 }
 
-func (lh *LiveHandler) genhandler() (http.Handler, string, error) {
+func (lh *LiveHandler) genhandler() (*Handler, error) {
 	blog, err := ParseArea(lh.src)
 	if err != nil {
-		return nil, "", fmt.Errorf("cannot parse: %w", err)
+		return nil, fmt.Errorf("cannot parse: %w", err)
 	}
-	target, err := os.MkdirTemp("", "")
+	h, err := blog.Handler(lh.theme)
 	if err != nil {
-		return nil, "", fmt.Errorf("cannot make tempdir: %w", err)
+		return nil, fmt.Errorf("cannot get handler: %w", err)
 	}
-	h, err := blog.Handler(target, lh.theme)
-	if err != nil {
-		return nil, target, fmt.Errorf("cannot get handler: %w", err)
-	}
-	return h, target, nil
+	return h, nil
 }

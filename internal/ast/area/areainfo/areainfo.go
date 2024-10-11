@@ -26,12 +26,12 @@ func (info *AreaInfo) GetIndex() (*page.Page, bool) {
 	return info.index, info.index != nil
 }
 
-func (info *AreaInfo) LinksWithHtmlExt() bool {
+func (info *AreaInfo) DynamicLinks() bool {
 	switch info.purpose {
 	case PurposeStaticServe:
-		return true
-	case PurposeDynamicServe:
 		return false
+	case PurposeDynamicServe:
+		return true
 	default:
 		assert.Assert(false)
 		return false
