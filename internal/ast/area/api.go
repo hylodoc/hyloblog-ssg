@@ -55,8 +55,14 @@ func (a *Area) genpages(dir string) []PageInterface {
 	for name := range a.pages {
 		pages = append(
 			pages,
-			pageinterface(filepath.Join(dir, replaceext(name, ""))),
+			pageinterface(genlink(name, dir)),
 		)
 	}
 	return pages
+}
+func genlink(name, dir string) string {
+	if name == indexFile {
+		return dir
+	}
+	return filepath.Join(dir, replaceext(name, ""))
 }

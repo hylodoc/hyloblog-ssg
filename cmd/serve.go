@@ -22,19 +22,9 @@ var serveCmd = &cobra.Command{
 		}
 		src, theme := args[0], args[1]
 
-		/* violation of Dijkstra's rule because I haven't yet figured
-		* out how to cleanly destroy the temp target dir without relying
-		* on a defer */
-		var h http.Handler
-		if livereload {
-			h = area.CreateLiveHandler(src, theme)
-		} else {
-			ssghandler, err := ssg.NewHandler(src, theme)
-			if err != nil {
-				return fmt.Errorf("cannot get handler: %w", err)
-			}
-			defer ssghandler.Destroy()
-			h = ssghandler
+		h, err := choosehandler(src, theme, livereload)
+		if err != nil {
+			return fmt.Errorf("cannot choose handler: %w", err)
 		}
 		s := &http.Server{
 			Addr:           fmt.Sprintf(":%d", port),
@@ -46,6 +36,17 @@ var serveCmd = &cobra.Command{
 		log.Printf("listening on %s...", s.Addr)
 		return s.ListenAndServe()
 	},
+}
+
+func choosehandler(src, theme string, livereload bool) (http.Handler, error) {
+	if livereload {
+		return area.CreateLiveHandler(src, theme), nil
+	}
+	h, err := ssg.NewHandler(src, theme)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get handler: %w", err)
+	}
+	return h, nil
 }
 
 var (

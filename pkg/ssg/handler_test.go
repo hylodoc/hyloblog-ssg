@@ -19,6 +19,7 @@ func testHandler() error {
 		return fmt.Errorf("cannot make handler: %w", err)
 	}
 	expected := []string{
+		"/",
 		"/post",
 		"/nest/post",
 		"/nest-no-ignore/README",
