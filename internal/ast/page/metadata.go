@@ -3,12 +3,15 @@ package page
 import (
 	"fmt"
 	"net/url"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
 
 type metadata struct {
-	URL string `yaml:"url"`
+	URL       string       `yaml:"url"`
+	Published parsabletime `yaml:"published"`
+	Updated   parsabletime `yaml:"updated"`
 }
 
 func parsemetadata(raw string) (*metadata, error) {
@@ -30,4 +33,51 @@ func confirmurlvalid(u string) error {
 		return fmt.Errorf("cannot parse: %w", err)
 	}
 	return nil
+}
+
+func (m *metadata) timing() *timing {
+	published, updated := time.Time(m.Published), time.Time(m.Updated)
+	if published.IsZero() {
+		return nil
+	}
+	if updated.IsZero() {
+		return &timing{published, published}
+	}
+	return &timing{published, updated}
+}
+
+type parsabletime time.Time
+
+func (pt *parsabletime) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var raw string
+	if err := unmarshal(&raw); err != nil {
+		return err
+	}
+	for _, format := range []string{
+		"2006-01-02 15:04:05",
+		"2006-01-02 15:04",
+		"2006-01-02 15:04:05 -0700",
+		"2006-01-02",
+
+		"Jan 02, 2006",
+		"Jan 02, 2006 15:04",
+		"Jan 02, 2006 15:04:05",
+
+		"2006-01-02T15:04:05Z07:00",
+		"2006-01-02T15:04:05",
+
+		time.RFC3339,
+		time.RFC1123,
+		time.RFC1123Z,
+		time.RFC822,
+		time.RFC822Z,
+		time.RFC850,
+	} {
+		t, err := time.Parse(format, raw)
+		if err == nil {
+			*pt = parsabletime(t)
+			return nil
+		}
+	}
+	return fmt.Errorf("unable to parse date: %s", raw)
 }

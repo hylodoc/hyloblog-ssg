@@ -77,9 +77,3 @@ func (a *Area) genpages(dir string) ([]PageInterface, error) {
 	}
 	return pages, nil
 }
-func genlink(name, dir string) string {
-	if name == indexFile {
-		return dir
-	}
-	return filepath.Join(dir, replaceext(name, ""))
-}

@@ -5,28 +5,28 @@ import (
 	"github.com/xr0-org/progstack-ssg/internal/ast/page"
 )
 
-type AreaInfo struct {
+type GenInfo struct {
 	theme, rootdir string
 	index          *page.Page
 	purpose        Purpose
 }
 
-func Create(
+func NewGenInfo(
 	theme, rootdir string, index *page.Page, purpose Purpose,
-) *AreaInfo {
-	return &AreaInfo{theme, rootdir, index, purpose}
+) *GenInfo {
+	return &GenInfo{theme, rootdir, index, purpose}
 }
 
-func (info *AreaInfo) WithNewIndex(index *page.Page) *AreaInfo {
+func (info *GenInfo) WithNewIndex(index *page.Page) *GenInfo {
 	assert.Assert(index != nil)
-	return Create(info.theme, info.rootdir, index, info.purpose)
+	return NewGenInfo(info.theme, info.rootdir, index, info.purpose)
 }
 
-func (info *AreaInfo) GetIndex() (*page.Page, bool) {
+func (info *GenInfo) GetIndex() (*page.Page, bool) {
 	return info.index, info.index != nil
 }
 
-func (info *AreaInfo) DynamicLinks() bool {
+func (info *GenInfo) DynamicLinks() bool {
 	switch info.purpose {
 	case PurposeStaticServe:
 		return false
@@ -38,8 +38,8 @@ func (info *AreaInfo) DynamicLinks() bool {
 	}
 }
 
-func (info *AreaInfo) Theme() string { return info.theme }
-func (info *AreaInfo) Root() string  { return info.rootdir }
+func (info *GenInfo) Theme() string { return info.theme }
+func (info *GenInfo) Root() string  { return info.rootdir }
 
 type Purpose int
 

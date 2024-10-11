@@ -34,7 +34,7 @@ type IndexData struct {
 }
 
 type Post struct {
-	Title, Link, Category string
+	Title, Link, Category, Date string
 }
 
 func (thm *Theme) ExecuteIndex(w io.Writer, data *IndexData) error {
@@ -44,6 +44,7 @@ func (thm *Theme) ExecuteIndex(w io.Writer, data *IndexData) error {
 type DefaultData struct {
 	Title, Content string
 	SiteTitle      string
+	Date           string
 }
 
 func (thm *Theme) ExecuteDefault(w io.Writer, data *DefaultData) error {

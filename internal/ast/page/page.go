@@ -6,8 +6,12 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
+	"time"
 
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/rhinoman/go-commonmark"
 	"github.com/xr0-org/progstack-ssg/internal/assert"
 	"github.com/xr0-org/progstack-ssg/internal/theme"
@@ -15,6 +19,7 @@ import (
 
 type Page struct {
 	title, url string
+	timing     *timing
 	doc        *commonmark.CMarkNode
 }
 
@@ -34,7 +39,12 @@ func ParsePage(path string) (*Page, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse metadata: %w", err)
 	}
-	return &Page{title: gettitle(doc), url: m.URL, doc: doc}, nil
+	return &Page{
+		title:  gettitle(doc),
+		url:    m.URL,
+		timing: m.timing(),
+		doc:    doc,
+	}, nil
 }
 
 type components struct {
@@ -101,8 +111,83 @@ func replaceext(path, newext string) string {
 	return path[:len(path)-len(ext)] + newext
 }
 
-func (pg *Page) customurl() (string, bool) {
-	return pg.url, len(pg.url) > 0
+func ParsePageGit(path, gitdir string) (*Page, error) {
+	pg, err := ParsePage(path)
+	if err != nil {
+		return nil, err
+	}
+	if pg.timing == nil {
+		timing, err := getgittiming(path, gitdir)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"cannot get timing from git: %w", err,
+			)
+		}
+		pg.timing = timing
+	}
+	return pg, nil
+}
+
+type timing struct {
+	published, updated time.Time
+}
+
+func getgittiming(path, gitdir string) (*timing, error) {
+	repo, err := git.PlainOpen(gitdir)
+	if err != nil {
+		return nil, fmt.Errorf("cannot open repo: %w", err)
+	}
+	rel, err := filepath.Rel(filepath.Join(gitdir, ".."), path)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get relative path: %w", err)
+	}
+	log, err := repo.Log(&git.LogOptions{FileName: &rel})
+	if err != nil {
+		return nil, fmt.Errorf("cannot get log: %w", err)
+	}
+	defer log.Close()
+	commits := getcommits(log)
+	published, err := getcreated(commits)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get created: %w", err)
+	}
+	updated, err := getupdated(commits)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get updated: %w", err)
+	}
+	return &timing{*published, *updated}, nil
+}
+
+func getcommits(iter object.CommitIter) []object.Commit {
+	var commits []object.Commit
+	err := iter.ForEach(func(c *object.Commit) error {
+		commits = append(commits, *c)
+		return nil
+	})
+	assert.Assert(err == nil)
+	return commits
+}
+
+func getcreated(commits []object.Commit) (*time.Time, error) {
+	var t time.Time
+	for _, c := range commits {
+		when := c.Author.When
+		if t.IsZero() || when.Before(t) {
+			t = when
+		}
+	}
+	return &t, nil
+}
+
+func getupdated(commits []object.Commit) (*time.Time, error) {
+	var t time.Time
+	for _, c := range commits {
+		when := c.Author.When
+		if t.IsZero() || when.After(t) {
+			t = when
+		}
+	}
+	return &t, nil
 }
 
 func (pg *Page) GenerateIndex(
@@ -121,19 +206,26 @@ func (pg *Page) GenerateIndex(
 
 type Post struct {
 	title, category, link string
+	timing                *timing
 }
 
-func CreatePost(page *Page, category, link string) *Post {
-	return &Post{page.title, category, link}
+func CreatePost(pg *Page, category, link string) *Post {
+	return &Post{pg.title, category, link, pg.timing}
 }
 
 func tothemeposts(posts []Post) []theme.Post {
+	sort.Slice(posts, func(i, j int) bool {
+		t0, t1 := posts[i].timing, posts[j].timing
+		return t0 != nil && t1 != nil &&
+			t0.published.After(t1.published)
+	})
 	themeposts := make([]theme.Post, len(posts))
 	for i, p := range posts {
 		themeposts[i] = theme.Post{
 			Title:    p.title,
 			Category: p.category,
 			Link:     p.link,
+			Date:     getdate(p.timing),
 		}
 	}
 	return themeposts
@@ -147,7 +239,15 @@ func (pg *Page) GenerateWithoutIndex(w io.Writer, themedir string) error {
 	return thm.ExecuteDefault(w, &theme.DefaultData{
 		Title:   pg.title,
 		Content: pg.doc.RenderHtml(commonmark.CMARK_OPT_DEFAULT),
+		Date:    getdate(pg.timing),
 	})
+}
+
+func getdate(t *timing) string {
+	if t == nil {
+		return ""
+	}
+	return t.published.Format("Jan 02, 2006")
 }
 
 func (pg *Page) Generate(w io.Writer, themedir string, index *Page) error {
@@ -161,5 +261,6 @@ func (pg *Page) Generate(w io.Writer, themedir string, index *Page) error {
 		Title:     pg.title,
 		Content:   pg.doc.RenderHtml(commonmark.CMARK_OPT_DEFAULT),
 		SiteTitle: index.title,
+		Date:      getdate(pg.timing),
 	})
 }

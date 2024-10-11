@@ -10,7 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/xr0-org/progstack-ssg/internal/assert"
 	"github.com/xr0-org/progstack-ssg/internal/ast/area/areainfo"
-	"github.com/xr0-org/progstack-ssg/internal/ast/area/ignorer"
+	"github.com/xr0-org/progstack-ssg/internal/ast/area/readdir"
 	"github.com/xr0-org/progstack-ssg/internal/ast/page"
 )
 
@@ -26,62 +26,57 @@ type Area struct {
 }
 
 func ParseArea(dir string) (*Area, error) {
-	return parse(dir, dir, ignorer.Empty())
+	return parse(dir, dir, areainfo.NewParseInfo())
 }
 
-func parse(dir, parent string, oldign *ignorer.Ignorer) (*Area, error) {
+func parse(dir, parent string, info *areainfo.ParseInfo) (*Area, error) {
+	info, err := info.Descend(dir, ignoreFile)
+	if err != nil {
+		return nil, fmt.Errorf("cannot descend info: %w", err)
+	}
 	prefix, err := getprefix(dir, parent)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get prefix: %w", err)
 	}
-	ign, err := oldign.Augment(filepath.Join(dir, ignoreFile))
-	if err != nil {
-		return nil, fmt.Errorf("cannot get ignore: %w", err)
-	}
 	A := Area{prefix, map[string]page.Page{}, []Area{}}
-	entries, err := os.ReadDir(dir)
+	areadir, err := readdir.ReadDir(dir)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read dir: %w", err)
 	}
-	for _, e := range entries {
-		if ign.ShouldIgnore(e.Name()) {
+	for _, d := range areadir.Directories() {
+		path := d.Path()
+		base := filepath.Base(path)
+		if info.ShouldIgnore(base) {
 			continue
 		}
-		if e.IsDir() {
-			if e.Name() == ".git" {
-				continue
-			}
-			path := filepath.Join(dir, e.Name())
-			a, err := parse(path, dir, ign)
-			if err != nil {
-				return nil, fmt.Errorf(
-					"cannot parse subarea %q: %w", path, err,
-				)
-			}
-			A.subareas = append(A.subareas, *a)
+		if base == ".git" {
+			continue
 		}
+		a, err := parse(path, dir, info)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"cannot parse subarea %q: %w", path, err,
+			)
+		}
+		A.subareas = append(A.subareas, *a)
 	}
-	for _, e := range entries {
-		name := e.Name()
-		if ign.ShouldIgnore(name) {
+	for _, f := range areadir.Files() {
+		path := f.Path()
+		base := filepath.Base(path)
+		if info.ShouldIgnore(base) {
 			continue
 		}
-		if !e.IsDir() {
-			t := e.Type()
-			assert.Printf(t.IsRegular(), "unknown file type %v", t)
-			if filepath.Ext(name) != ".md" {
-				continue
-			}
-			path := filepath.Join(dir, name)
-			page, err := page.ParsePage(path)
-			if err != nil {
-				return nil, fmt.Errorf(
-					"cannot parse page %q: %w",
-					path, err,
-				)
-			}
-			A.pages[name] = *page
+		if filepath.Ext(base) != ".md" {
+			continue
 		}
+		page, err := parsepage(path, info)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"cannot parse page %q: %w",
+				path, err,
+			)
+		}
+		A.pages[base] = *page
 	}
 	return &A, nil
 }
@@ -97,22 +92,29 @@ func getprefix(dir, parent string) (string, error) {
 	return prefix, nil
 }
 
+func parsepage(path string, info *areainfo.ParseInfo) (*page.Page, error) {
+	if gitdir, ok := info.GitDir(); ok {
+		return page.ParsePageGit(path, gitdir)
+	}
+	return page.ParsePage(path)
+}
+
 func (A *Area) GenerateSite(
 	target string, theme string, p areainfo.Purpose,
 ) error {
-	return A.generate(target, areainfo.Create(theme, target, nil, p))
+	return A.generate(target, areainfo.NewGenInfo(theme, target, nil, p))
 }
 
-func (A *Area) generate(target string, ainfo *areainfo.AreaInfo) error {
+func (A *Area) generate(target string, g *areainfo.GenInfo) error {
 	if index, ok := A.pages[indexFile]; ok {
-		ainfo = ainfo.WithNewIndex(&index)
+		g = g.WithNewIndex(&index)
 	}
 	dir := filepath.Join(target, A.prefix)
 	if err := os.MkdirAll(dir, 0777); err != nil {
 		return fmt.Errorf("cannot make dir: %w", err)
 	}
 	for _, a := range A.subareas {
-		if err := a.generate(dir, ainfo); err != nil {
+		if err := a.generate(dir, g); err != nil {
 			return fmt.Errorf(
 				"cannot generate subarea %q: %w",
 				filepath.Join(dir, a.prefix), err,
@@ -120,7 +122,7 @@ func (A *Area) generate(target string, ainfo *areainfo.AreaInfo) error {
 		}
 	}
 	for name, page := range A.pages {
-		if err := A.generatepage(name, dir, &page, ainfo); err != nil {
+		if err := A.generatepage(name, dir, &page, g); err != nil {
 			return fmt.Errorf(
 				"cannot generate page: %q: %w", name, err,
 			)
@@ -130,7 +132,7 @@ func (A *Area) generate(target string, ainfo *areainfo.AreaInfo) error {
 }
 
 func (A *Area) generatepage(
-	name, dir string, page *page.Page, ainfo *areainfo.AreaInfo,
+	name, dir string, page *page.Page, g *areainfo.GenInfo,
 ) error {
 	f, err := os.Create(genpagehtmlpath(name, dir))
 	if err != nil {
@@ -139,13 +141,13 @@ func (A *Area) generatepage(
 	defer f.Close()
 	if name == indexFile {
 		return page.GenerateIndex(
-			f, A.getposts(dir, ainfo), ainfo.Theme(),
+			f, A.getposts(dir, g), g.Theme(),
 		)
 	}
-	if index, ok := ainfo.GetIndex(); ok {
-		return page.Generate(f, ainfo.Theme(), index)
+	if index, ok := g.GetIndex(); ok {
+		return page.Generate(f, g.Theme(), index)
 	}
-	return page.GenerateWithoutIndex(f, ainfo.Theme())
+	return page.GenerateWithoutIndex(f, g.Theme())
 }
 
 func genpagehtmlpath(name, dir string) string {
@@ -157,12 +159,12 @@ func replaceext(path, newext string) string {
 	return path[:len(path)-len(ext)] + newext
 }
 
-func (A *Area) getposts(dir string, ainfo *areainfo.AreaInfo) []page.Post {
+func (A *Area) getposts(dir string, g *areainfo.GenInfo) []page.Post {
 	var posts []page.Post
 	for _, a := range A.subareas {
 		posts = append(
 			posts,
-			a.getposts(filepath.Join(dir, a.prefix), ainfo)...,
+			a.getposts(filepath.Join(dir, a.prefix), g)...,
 		)
 	}
 	for name := range A.pages {
@@ -172,8 +174,8 @@ func (A *Area) getposts(dir string, ainfo *areainfo.AreaInfo) []page.Post {
 		pg := A.pages[name]
 		link, err := pg.Link(
 			filepath.Join(dir, name),
-			ainfo.Root(),
-			ainfo.DynamicLinks(),
+			g.Root(),
+			g.DynamicLinks(),
 		)
 		assert.Assert(err == nil)
 		posts = append(posts, *page.CreatePost(&pg, A.prefix, link))
@@ -205,19 +207,19 @@ func (A *Area) Handler(theme string) (*Handler, error) {
 	}
 	r := mux.NewRouter()
 	return &Handler{r, target}, A.registerhandlers(
-		target, areainfo.Create(theme, target, nil, purpose), r,
+		target, areainfo.NewGenInfo(theme, target, nil, purpose), r,
 	)
 }
 
 func (A *Area) registerhandlers(
-	target string, ainfo *areainfo.AreaInfo, mux *mux.Router,
+	target string, g *areainfo.GenInfo, mux *mux.Router,
 ) error {
 	if index, ok := A.pages[indexFile]; ok {
-		ainfo = ainfo.WithNewIndex(&index)
+		g = g.WithNewIndex(&index)
 	}
 	dir := filepath.Join(target, A.prefix)
 	for _, a := range A.subareas {
-		if err := a.registerhandlers(dir, ainfo, mux); err != nil {
+		if err := a.registerhandlers(dir, g, mux); err != nil {
 			return fmt.Errorf(
 				"cannot register subarea %q: %w",
 				filepath.Join(dir, a.prefix), err,
@@ -226,7 +228,7 @@ func (A *Area) registerhandlers(
 	}
 	for name := range A.pages {
 		pg := A.pages[name]
-		path, err := hostpath(&pg, name, dir, ainfo.Root())
+		path, err := hostpath(&pg, name, dir, g.Root())
 		if err != nil {
 			return fmt.Errorf(
 				"cannot make path for %q: %w", name, err,
