@@ -26,10 +26,8 @@ func confirmurlvalid(u string) error {
 	if len(u) > 0 && u[0] != '/' {
 		return fmt.Errorf("must begin with '/'")
 	}
-	if ur, err := url.Parse(u); err != nil {
+	if _, err := url.Parse(u); err != nil {
 		return fmt.Errorf("cannot parse: %w", err)
-	} else {
-		fmt.Println("parsed", ur)
 	}
 	return nil
 }

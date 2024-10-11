@@ -20,12 +20,16 @@ func testHandler() error {
 	}
 	expected := []string{
 		"/",
-		"/post",
+		"/abc/def",
 		"/nest/post",
 		"/nest-no-ignore/README",
 		"/nest-no-ignore/post",
 	}
-	return confirmsetequal(expected, getallpages(h.AreaInterface()))
+	ifc, err := h.AreaInterface()
+	if err != nil {
+		return fmt.Errorf("cannot make interface: %w", err)
+	}
+	return confirmsetequal(expected, getallpages(ifc))
 }
 
 func getallpages(ifc area.AreaInterface) []string {

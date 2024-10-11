@@ -1,6 +1,9 @@
 package area
 
-import "path/filepath"
+import (
+	"fmt"
+	"path/filepath"
+)
 
 type AreaInterface interface {
 	Prefix() string
@@ -22,13 +25,21 @@ func (a *areainterface) Prefix() string            { return a.prefix }
 func (a *areainterface) Subareas() []AreaInterface { return a.subareas }
 func (a *areainterface) Pages() []PageInterface    { return a.pages }
 
-func (a *Area) Interface() AreaInterface {
+func (a *Area) Interface() (AreaInterface, error) {
 	return a.geninterface("/")
 }
 
-func (a *Area) geninterface(parentdir string) AreaInterface {
+func (a *Area) geninterface(parentdir string) (AreaInterface, error) {
 	dir := a.augmentdir(parentdir)
-	return &areainterface{a.prefix, a.getsubareas(dir), a.genpages(dir)}
+	subareas, err := a.getsubareas(dir)
+	if err != nil {
+		return nil, fmt.Errorf("cannot generate subareas: %w", err)
+	}
+	pages, err := a.genpages(dir)
+	if err != nil {
+		return nil, fmt.Errorf("cannot generate pages: %w", err)
+	}
+	return &areainterface{a.prefix, subareas, pages}, nil
 }
 
 func (a *Area) augmentdir(parentdir string) string {
@@ -38,27 +49,33 @@ func (a *Area) augmentdir(parentdir string) string {
 	return parentdir
 }
 
-func (a *Area) getsubareas(dir string) []AreaInterface {
+func (a *Area) getsubareas(dir string) ([]AreaInterface, error) {
 	subareas := make([]AreaInterface, len(a.subareas))
 	for i := range a.subareas {
-		subareas[i] = a.subareas[i].geninterface(dir)
+		sub, err := a.subareas[i].geninterface(dir)
+		if err != nil {
+			return nil, fmt.Errorf("cannot make subarea: %w", err)
+		}
+		subareas[i] = sub
 	}
-	return subareas
+	return subareas, nil
 }
 
 type pageinterface string
 
 func (p pageinterface) Link() string { return string(p) }
 
-func (a *Area) genpages(dir string) []PageInterface {
+func (a *Area) genpages(dir string) ([]PageInterface, error) {
 	var pages []PageInterface
 	for name := range a.pages {
-		pages = append(
-			pages,
-			pageinterface(genlink(name, dir)),
-		)
+		pg := a.pages[name]
+		path, err := hostpath(&pg, name, dir, "/")
+		if err != nil {
+			return nil, fmt.Errorf("cannot make hostpath: %w", err)
+		}
+		pages = append(pages, pageinterface(path))
 	}
-	return pages
+	return pages, nil
 }
 func genlink(name, dir string) string {
 	if name == indexFile {

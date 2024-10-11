@@ -12,7 +12,7 @@ import (
 // blog.
 type Handler interface {
 	http.Handler
-	AreaInterface() area.AreaInterface
+	AreaInterface() (area.AreaInterface, error)
 	Destroy() error
 }
 
@@ -41,6 +41,6 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.ServeHTTP(w, r)
 }
 
-func (h *handler) AreaInterface() area.AreaInterface {
+func (h *handler) AreaInterface() (area.AreaInterface, error) {
 	return h.blog.Interface()
 }
