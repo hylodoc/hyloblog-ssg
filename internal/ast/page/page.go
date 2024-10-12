@@ -244,7 +244,7 @@ func (pg *Page) GenerateWithoutIndex(w io.Writer, themedir string) error {
 }
 
 func getdate(t *timing) string {
-	if t == nil {
+	if t == nil || t.published.IsZero() {
 		return ""
 	}
 	return t.published.Format("Jan 02, 2006")

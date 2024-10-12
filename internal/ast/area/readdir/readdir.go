@@ -37,6 +37,8 @@ func ReadDir(dir string) (Directory, error) {
 
 type file string
 
+func NewFile(path string) File { return file(path) }
+
 func (f file) Path() string { return string(f) }
 
 func getfiles(dir string, entries []os.DirEntry) []File {

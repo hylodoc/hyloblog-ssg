@@ -12,8 +12,8 @@
 
 			{{ range .Posts }}
 			<div class="c">
-				<p>{{ .Date }}</p>
-                                <h2><a href="{{ .Link }}">{{ .Title }}{{ if .Category }}</a> <small>{{ .Category }}</small>{{ end }}</h2>
+				<p>{{ .Date }} · {{ .Category }}</p>
+				<h2><a href="{{ .Link }}">{{ .Title }}</a></h2>
 			</div>
 			{{ end }}
 		</div>

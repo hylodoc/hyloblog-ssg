@@ -69,7 +69,7 @@ func (a *Area) genpages(dir string) ([]PageInterface, error) {
 	var pages []PageInterface
 	for name := range a.pages {
 		pg := a.pages[name]
-		path, err := hostpath(&pg, name, dir, "/")
+		path, err := pagehostpath(&pg, name, dir, "/")
 		if err != nil {
 			return nil, fmt.Errorf("cannot make hostpath: %w", err)
 		}

@@ -2,6 +2,7 @@ package area
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -20,9 +21,19 @@ const (
 )
 
 type Area struct {
-	prefix   string
-	pages    map[string]page.Page
-	subareas []Area
+	prefix     string
+	subareas   []Area
+	pages      map[string]page.Page
+	otherfiles map[string]readdir.File
+}
+
+func newarea(prefix string) *Area {
+	return &Area{
+		prefix,
+		[]Area{},
+		map[string]page.Page{},
+		map[string]readdir.File{},
+	}
 }
 
 func ParseArea(dir string) (*Area, error) {
@@ -38,7 +49,7 @@ func parse(dir, parent string, info *areainfo.ParseInfo) (*Area, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot get prefix: %w", err)
 	}
-	A := Area{prefix, map[string]page.Page{}, []Area{}}
+	A := newarea(prefix)
 	areadir, err := readdir.ReadDir(dir)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read dir: %w", err)
@@ -67,6 +78,9 @@ func parse(dir, parent string, info *areainfo.ParseInfo) (*Area, error) {
 			continue
 		}
 		if filepath.Ext(base) != ".md" {
+			if includefile(base) {
+				A.otherfiles[base] = readdir.NewFile(path)
+			}
 			continue
 		}
 		page, err := parsepage(path, info)
@@ -78,7 +92,7 @@ func parse(dir, parent string, info *areainfo.ParseInfo) (*Area, error) {
 		}
 		A.pages[base] = *page
 	}
-	return &A, nil
+	return A, nil
 }
 
 func getprefix(dir, parent string) (string, error) {
@@ -97,6 +111,15 @@ func parsepage(path string, info *areainfo.ParseInfo) (*page.Page, error) {
 		return page.ParsePageGit(path, gitdir)
 	}
 	return page.ParsePage(path)
+}
+
+func includefile(name string) bool {
+	switch filepath.Ext(name) {
+	case ".png", ".jpg", ".jpeg", ".gif":
+		return true
+	default:
+		return false
+	}
 }
 
 func (A *Area) GenerateSite(
@@ -126,6 +149,11 @@ func (A *Area) generate(target string, g *areainfo.GenInfo) error {
 			return fmt.Errorf(
 				"cannot generate page: %q: %w", name, err,
 			)
+		}
+	}
+	for name, f := range A.otherfiles {
+		if err := fcopy(f.Path(), filepath.Join(dir, name)); err != nil {
+			return fmt.Errorf("cannot copy %q: %w", name, err)
 		}
 	}
 	return nil
@@ -183,6 +211,26 @@ func (A *Area) getposts(dir string, g *areainfo.GenInfo) []page.Post {
 	return posts
 }
 
+func fcopy(srcpath, dstpath string) error {
+	src, err := os.Open(srcpath)
+	if err != nil {
+		return fmt.Errorf("cannot open source: %w", err)
+	}
+	defer src.Close()
+	dst, err := os.Create(dstpath)
+	if err != nil {
+		return fmt.Errorf("cannot create destination: %w", err)
+	}
+	defer dst.Close()
+	if _, err := io.Copy(dst, src); err != nil {
+		return fmt.Errorf("io copy error: %w", err)
+	}
+	if err := dst.Sync(); err != nil {
+		return fmt.Errorf("flush error: %w", err)
+	}
+	return nil
+}
+
 type Handler struct {
 	h         http.Handler
 	targetdir string
@@ -206,6 +254,7 @@ func (A *Area) Handler(theme string) (*Handler, error) {
 		return nil, fmt.Errorf("cannot generate site: %w", err)
 	}
 	r := mux.NewRouter()
+	r.StrictSlash(true)
 	return &Handler{r, target}, A.registerhandlers(
 		target, areainfo.NewGenInfo(theme, target, nil, purpose), r,
 	)
@@ -228,18 +277,27 @@ func (A *Area) registerhandlers(
 	}
 	for name := range A.pages {
 		pg := A.pages[name]
-		path, err := hostpath(&pg, name, dir, g.Root())
+		path, err := pagehostpath(&pg, name, dir, g.Root())
 		if err != nil {
 			return fmt.Errorf(
 				"cannot make path for %q: %w", name, err,
 			)
 		}
-		mux.HandleFunc(path, handler(name, dir))
+		mux.HandleFunc(path, filehandler(genpagehtmlpath(name, dir)))
+	}
+	for name := range A.otherfiles {
+		path, err := filehostpath(name, dir, g.Root())
+		if err != nil {
+			return fmt.Errorf(
+				"cannot make path for %q: %w", name, err,
+			)
+		}
+		mux.HandleFunc(path, filehandler(filepath.Join(dir, name)))
 	}
 	return nil
 }
 
-func hostpath(pg *page.Page, name, dir, rootdir string) (string, error) {
+func pagehostpath(pg *page.Page, name, dir, rootdir string) (string, error) {
 	if name == indexFile {
 		path, err := filepath.Rel(rootdir, dir)
 		if err != nil {
@@ -253,13 +311,19 @@ func hostpath(pg *page.Page, name, dir, rootdir string) (string, error) {
 	return pg.Link(filepath.Join(dir, name), rootdir, true)
 }
 
-func handler(name, dir string) http.HandlerFunc {
+func filehostpath(name, dir, rootdir string) (string, error) {
+	rel, err := filepath.Rel(rootdir, filepath.Join(dir, name))
+	if err != nil {
+		return "", fmt.Errorf("cannot get relative path: %w", err)
+	}
+	assert.Assert(rel != ".")
+	return filepath.Join("/", rel), nil
+}
+
+func filehandler(path string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		path := genpagehtmlpath(name, dir)
 		log.Println(r.URL, "->", path)
-		http.ServeFile(
-			w, r, genpagehtmlpath(name, dir),
-		)
+		http.ServeFile(w, r, path)
 	}
 }
 
