@@ -9,7 +9,17 @@
 	<body>
 		<div class="c">
 			<h1><a style="color: #ccc" href="/">{{ .SiteTitle }}</a></h1>
-			<p>{{ .Date }}</p>
+			<p>
+			{{ .Date }}
+			{{ range .Authors}}
+				·
+				{{ if .Page }}
+					<a href="{{ .Page }}">{{ .Name }}</a>
+				{{ else }}
+					{{ .Name }}
+				{{ end }}
+			{{end}}
+			</p>
 			{{ .Content }}
 		</div>
 	</body>

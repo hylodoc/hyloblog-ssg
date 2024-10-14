@@ -33,18 +33,24 @@ type IndexData struct {
 	Posts          []Post
 }
 
-type Post struct {
-	Title, Link, Category, Date string
-}
-
 func (thm *Theme) ExecuteIndex(w io.Writer, data *IndexData) error {
 	return thm.index.Execute(w, data)
+}
+
+type Post struct {
+	Title, Link, Category, Date string
+	Authors                     []Author
+}
+
+type Author struct {
+	Name, Page string
 }
 
 type DefaultData struct {
 	Title, Content string
 	SiteTitle      string
 	Date           string
+	Authors        []Author
 }
 
 func (thm *Theme) ExecuteDefault(w io.Writer, data *DefaultData) error {

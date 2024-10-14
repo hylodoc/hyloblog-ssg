@@ -9,9 +9,11 @@ import (
 )
 
 type metadata struct {
-	URL       string       `yaml:"url"`
-	Published parsabletime `yaml:"published"`
-	Updated   parsabletime `yaml:"updated"`
+	URL        string               `yaml:"url"`
+	Published  parsabletime         `yaml:"published"`
+	Updated    parsabletime         `yaml:"updated"`
+	Author     []string             `yaml:"author"`
+	AuthorDefs map[string]authordef `yaml:"authors"`
 }
 
 func parsemetadata(raw string) (*metadata, error) {
@@ -44,6 +46,35 @@ func (m *metadata) timing() *timing {
 		return &timing{published, published}
 	}
 	return &timing{published, updated}
+}
+
+func (m *metadata) definedauthors() []authordef {
+	return defineauthors(m.Author, m.AuthorDefs)
+}
+
+type authordef struct {
+	Name string `yaml:"name"`
+	Page string `yaml:"page"`
+}
+
+func defineauthors(undef []string, defs map[string]authordef) []authordef {
+	var defined []authordef
+	for _, author := range undef {
+		if def, ok := defs[author]; ok {
+			defined = append(defined, def)
+		} else {
+			defined = append(defined, authordef{Name: author})
+		}
+	}
+	return defined
+}
+
+func tostrings(defs []authordef) []string {
+	s := make([]string, len(defs))
+	for i := 0; i < len(defs); i++ {
+		s[i] = defs[i].Name
+	}
+	return s
 }
 
 type parsabletime time.Time

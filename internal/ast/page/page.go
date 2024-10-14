@@ -21,6 +21,8 @@ type Page struct {
 	title, url string
 	timing     *timing
 	doc        *commonmark.CMarkNode
+	authors    []authordef          // authors of this page
+	authordefs map[string]authordef // definitions on this page
 }
 
 func ParsePage(path string) (*Page, error) {
@@ -40,10 +42,12 @@ func ParsePage(path string) (*Page, error) {
 		return nil, fmt.Errorf("cannot parse metadata: %w", err)
 	}
 	return &Page{
-		title:  gettitle(doc),
-		url:    m.URL,
-		timing: m.timing(),
-		doc:    doc,
+		title:      gettitle(doc),
+		url:        m.URL,
+		timing:     m.timing(),
+		doc:        doc,
+		authors:    m.definedauthors(),
+		authordefs: m.AuthorDefs,
 	}, nil
 }
 
@@ -116,23 +120,31 @@ func ParsePageGit(path, gitdir string) (*Page, error) {
 	if err != nil {
 		return nil, err
 	}
+	info, err := getgitinfo(path, gitdir)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"cannot get timing from git: %w", err,
+		)
+	}
 	if pg.timing == nil {
-		timing, err := getgittiming(path, gitdir)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"cannot get timing from git: %w", err,
-			)
-		}
-		pg.timing = timing
+		pg.timing = &info.timing
+	}
+	if len(pg.authors) == 0 {
+		pg.authors = []authordef{authordef{Name: info.author}}
 	}
 	return pg, nil
+}
+
+type gitinfo struct {
+	timing timing
+	author string
 }
 
 type timing struct {
 	published, updated time.Time
 }
 
-func getgittiming(path, gitdir string) (*timing, error) {
+func getgitinfo(path, gitdir string) (*gitinfo, error) {
 	repo, err := git.PlainOpen(gitdir)
 	if err != nil {
 		return nil, fmt.Errorf("cannot open repo: %w", err)
@@ -151,11 +163,15 @@ func getgittiming(path, gitdir string) (*timing, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot get created: %w", err)
 	}
+	author, err := getauthor(commits)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get author: %w", err)
+	}
 	updated, err := getupdated(commits)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get updated: %w", err)
 	}
-	return &timing{*published, *updated}, nil
+	return &gitinfo{timing{*published, *updated}, author}, nil
 }
 
 func getcommits(iter object.CommitIter) []object.Commit {
@@ -179,6 +195,13 @@ func getcreated(commits []object.Commit) (*time.Time, error) {
 	return &t, nil
 }
 
+func getauthor(commits []object.Commit) (string, error) {
+	if len(commits) == 0 {
+		return "", fmt.Errorf("no commits")
+	}
+	return commits[0].Author.Name, nil
+}
+
 func getupdated(commits []object.Commit) (*time.Time, error) {
 	var t time.Time
 	for _, c := range commits {
@@ -200,20 +223,21 @@ func (pg *Page) GenerateIndex(
 	return thm.ExecuteIndex(w, &theme.IndexData{
 		Title:   pg.title,
 		Content: pg.doc.RenderHtml(commonmark.CMARK_OPT_DEFAULT),
-		Posts:   tothemeposts(posts),
+		Posts:   tothemeposts(posts, pg),
 	})
 }
 
 type Post struct {
 	title, category, link string
 	timing                *timing
+	authors               []authordef
 }
 
 func CreatePost(pg *Page, category, link string) *Post {
-	return &Post{pg.title, category, link, pg.timing}
+	return &Post{pg.title, category, link, pg.timing, pg.authors}
 }
 
-func tothemeposts(posts []Post) []theme.Post {
+func tothemeposts(posts []Post, index *Page) []theme.Post {
 	sort.Slice(posts, func(i, j int) bool {
 		t0, t1 := posts[i].timing, posts[j].timing
 		return t0 != nil && t1 != nil &&
@@ -226,9 +250,18 @@ func tothemeposts(posts []Post) []theme.Post {
 			Category: p.category,
 			Link:     p.link,
 			Date:     getdate(p.timing),
+			Authors:  getauthors(p.authors, index.authordefs),
 		}
 	}
 	return themeposts
+}
+
+func getauthors(undef []authordef, defs map[string]authordef) []theme.Author {
+	var authors []theme.Author
+	for _, author := range defineauthors(tostrings(undef), defs) {
+		authors = append(authors, theme.Author(author))
+	}
+	return authors
 }
 
 func (pg *Page) GenerateWithoutIndex(w io.Writer, themedir string) error {
@@ -240,6 +273,7 @@ func (pg *Page) GenerateWithoutIndex(w io.Writer, themedir string) error {
 		Title:   pg.title,
 		Content: pg.doc.RenderHtml(commonmark.CMARK_OPT_DEFAULT),
 		Date:    getdate(pg.timing),
+		Authors: getauthorsnoindex(pg.authors),
 	})
 }
 
@@ -262,5 +296,10 @@ func (pg *Page) Generate(w io.Writer, themedir string, index *Page) error {
 		Content:   pg.doc.RenderHtml(commonmark.CMARK_OPT_DEFAULT),
 		SiteTitle: index.title,
 		Date:      getdate(pg.timing),
+		Authors:   getauthors(pg.authors, index.authordefs),
 	})
+}
+
+func getauthorsnoindex(authors []authordef) []theme.Author {
+	return getauthors(authors, map[string]authordef{})
 }

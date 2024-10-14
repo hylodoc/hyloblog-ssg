@@ -12,7 +12,19 @@
 
 			{{ range .Posts }}
 			<div class="c">
-				<p>{{ .Date }} · {{ .Category }}</p>
+				<p>
+					{{ .Date }}
+					·
+					{{ .Category }}
+					{{ range .Authors}}
+						·
+						{{ if .Page }}
+							<a href="{{ .Page }}">{{ .Name }}</a>
+						{{ else }}
+							{{ .Name }}
+						{{ end }}
+					{{end}}
+				</p>
 				<h2><a href="{{ .Link }}">{{ .Title }}</a></h2>
 			</div>
 			{{ end }}
