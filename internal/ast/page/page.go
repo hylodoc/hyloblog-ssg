@@ -12,7 +12,6 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/rhinoman/go-commonmark"
 	"github.com/xr0-org/progstack-ssg/internal/assert"
 	"github.com/xr0-org/progstack-ssg/internal/theme"
 )
@@ -20,7 +19,7 @@ import (
 type Page struct {
 	title, url string
 	timing     *timing
-	doc        *commonmark.CMarkNode
+	doc        string
 	authors    []authordef          // authors of this page
 	authordefs map[string]authordef // definitions on this page
 }
@@ -34,18 +33,19 @@ func ParsePage(path string) (*Page, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot separate: %w", err)
 	}
-	doc := commonmark.ParseDocument(
-		components.content, commonmark.CMARK_OPT_DEFAULT,
-	)
+	mdpage, err := parsemdpage(components.content)
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse content: %w", err)
+	}
 	m, err := parsemetadata(components.metadata)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse metadata: %w", err)
 	}
 	return &Page{
-		title:      gettitle(doc),
+		title:      mdpage.title,
 		url:        m.URL,
 		timing:     m.timing(),
-		doc:        doc,
+		doc:        mdpage.content,
 		authors:    m.definedauthors(),
 		authordefs: m.AuthorDefs,
 	}, nil
@@ -70,19 +70,6 @@ func separate(s string) (*components, error) {
 		strings.TrimSpace(s[:endmeta]),
 		strings.TrimSpace(s[endmeta+3:]),
 	}, nil
-}
-
-func gettitle(doc *commonmark.CMarkNode) string {
-	iter := commonmark.NewCMarkIter(doc)
-	defer iter.Free()
-	for iter.Next() != commonmark.CMARK_EVENT_DONE {
-		n := iter.GetNode()
-		if n.GetNodeType() == commonmark.CMARK_NODE_HEADING &&
-			n.GetHeaderLevel() == 1 {
-			return strings.TrimSpace(n.FirstChild().GetLiteral())
-		}
-	}
-	return ""
 }
 
 func (pg *Page) Link(path, rootdir string, dynamiclinks bool) (string, error) {
@@ -129,7 +116,7 @@ func ParsePageGit(path, gitdir string) (*Page, error) {
 	if pg.timing == nil {
 		pg.timing = &info.timing
 	}
-	if len(pg.authors) == 0 {
+	if len(pg.authors) == 0 && info.author != "" {
 		pg.authors = []authordef{authordef{Name: info.author}}
 	}
 	return pg, nil
@@ -197,7 +184,7 @@ func getcreated(commits []object.Commit) (*time.Time, error) {
 
 func getauthor(commits []object.Commit) (string, error) {
 	if len(commits) == 0 {
-		return "", fmt.Errorf("no commits")
+		return "", nil
 	}
 	return commits[0].Author.Name, nil
 }
@@ -222,7 +209,7 @@ func (pg *Page) GenerateIndex(
 	}
 	return thm.ExecuteIndex(w, &theme.IndexData{
 		Title:   pg.title,
-		Content: pg.doc.RenderHtml(commonmark.CMARK_OPT_DEFAULT),
+		Content: pg.doc,
 		Posts:   tothemeposts(posts, pg),
 	})
 }
@@ -271,7 +258,7 @@ func (pg *Page) GenerateWithoutIndex(w io.Writer, themedir string) error {
 	}
 	return thm.ExecuteDefault(w, &theme.DefaultData{
 		Title:   pg.title,
-		Content: pg.doc.RenderHtml(commonmark.CMARK_OPT_DEFAULT),
+		Content: pg.doc,
 		Date:    getdate(pg.timing),
 		Authors: getauthorsnoindex(pg.authors),
 	})
@@ -293,7 +280,7 @@ func (pg *Page) Generate(w io.Writer, themedir string, index *Page) error {
 	}
 	return thm.ExecuteDefault(w, &theme.DefaultData{
 		Title:     pg.title,
-		Content:   pg.doc.RenderHtml(commonmark.CMARK_OPT_DEFAULT),
+		Content:   pg.doc,
 		SiteTitle: index.title,
 		Date:      getdate(pg.timing),
 		Authors:   getauthors(pg.authors, index.authordefs),
