@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	katex "github.com/FurqanSoftware/goldmark-katex"
 	"github.com/alecthomas/chroma"
 	"github.com/alecthomas/chroma/formatters/html"
 	"github.com/yuin/goldmark"
@@ -34,6 +35,7 @@ func parsemdpage(content, style string) (*mdpage, error) {
 				hl.WithFormatOptions(html.WithLineNumbers(false)),
 			),
 			&anchor.Extender{Texter: &texter{}},
+			&katex.Extender{},
 		),
 	)
 	doc := g.Parser().Parse(text.NewReader([]byte(content)))
