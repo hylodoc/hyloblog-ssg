@@ -11,8 +11,10 @@ import (
 	"github.com/yuin/goldmark/ast"
 	gm_ast "github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/text"
+	"go.abhg.dev/goldmark/anchor"
 )
 
 type mdpage struct {
@@ -21,12 +23,17 @@ type mdpage struct {
 
 func parsemdpage(content, style string) (*mdpage, error) {
 	g := goldmark.New(
+		goldmark.WithParserOptions(
+			parser.WithAttribute(),
+			parser.WithAutoHeadingID(),
+		),
 		goldmark.WithExtensions(
 			extension.NewFootnote(),
 			hl.NewHighlighting(
 				getstyle(style),
 				hl.WithFormatOptions(html.WithLineNumbers(false)),
 			),
+			&anchor.Extender{Texter: &texter{}},
 		),
 	)
 	doc := g.Parser().Parse(text.NewReader([]byte(content)))
@@ -57,6 +64,16 @@ func getstyle(name string) hl.Option {
 		return hl.WithStyle(name)
 	}
 	return hl.WithCustomStyle(style)
+}
+
+// only render anchors for heading levels above h1
+type texter struct{}
+
+func (*texter) AnchorText(h *anchor.HeaderInfo) []byte {
+	if h.Level == 1 {
+		return nil
+	}
+	return []byte("§")
 }
 
 func render(r renderer.Renderer, doc gm_ast.Node, content string) (string, error) {
