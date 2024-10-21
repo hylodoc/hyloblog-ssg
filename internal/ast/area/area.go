@@ -36,8 +36,8 @@ func newarea(prefix string) *Area {
 	}
 }
 
-func ParseArea(dir string) (*Area, error) {
-	return parse(dir, dir, areainfo.NewParseInfo())
+func ParseArea(dir, chromastyle string) (*Area, error) {
+	return parse(dir, dir, areainfo.NewParseInfo(chromastyle))
 }
 
 func parse(dir, parent string, info *areainfo.ParseInfo) (*Area, error) {
@@ -108,9 +108,9 @@ func getprefix(dir, parent string) (string, error) {
 
 func parsepage(path string, info *areainfo.ParseInfo) (*page.Page, error) {
 	if gitdir, ok := info.GitDir(); ok {
-		return page.ParsePageGit(path, gitdir)
+		return page.ParsePageGit(path, gitdir, info.ChromaStyle())
 	}
-	return page.ParsePage(path)
+	return page.ParsePage(path, info.ChromaStyle())
 }
 
 func includefile(name string) bool {
@@ -328,11 +328,11 @@ func filehandler(path string) http.HandlerFunc {
 }
 
 type LiveHandler struct {
-	src, theme string
+	src, theme, chromastyle string
 }
 
-func CreateLiveHandler(src, theme string) *LiveHandler {
-	return &LiveHandler{src, theme}
+func CreateLiveHandler(src, theme, chromastyle string) *LiveHandler {
+	return &LiveHandler{src, theme, chromastyle}
 }
 
 func (lh *LiveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -345,7 +345,7 @@ func (lh *LiveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (lh *LiveHandler) genhandler() (*Handler, error) {
-	blog, err := ParseArea(lh.src)
+	blog, err := ParseArea(lh.src, lh.chromastyle)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse: %w", err)
 	}

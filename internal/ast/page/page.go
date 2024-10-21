@@ -24,7 +24,7 @@ type Page struct {
 	authordefs map[string]authordef // definitions on this page
 }
 
-func ParsePage(path string) (*Page, error) {
+func ParsePage(path, chromastyle string) (*Page, error) {
 	buf, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read file: %w", err)
@@ -33,7 +33,7 @@ func ParsePage(path string) (*Page, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot separate: %w", err)
 	}
-	mdpage, err := parsemdpage(components.content)
+	mdpage, err := parsemdpage(components.content, chromastyle)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse content: %w", err)
 	}
@@ -102,8 +102,8 @@ func replaceext(path, newext string) string {
 	return path[:len(path)-len(ext)] + newext
 }
 
-func ParsePageGit(path, gitdir string) (*Page, error) {
-	pg, err := ParsePage(path)
+func ParsePageGit(path, gitdir, chromastyle string) (*Page, error) {
+	pg, err := ParsePage(path, chromastyle)
 	if err != nil {
 		return nil, err
 	}

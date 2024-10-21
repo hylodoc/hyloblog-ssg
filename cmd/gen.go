@@ -19,7 +19,7 @@ var genCmd = &cobra.Command{
 		}
 		src, target, theme := args[0], args[1], args[2]
 
-		blog, err := area.ParseArea(src)
+		blog, err := area.ParseArea(src, chromastyle)
 		if err != nil {
 			return fmt.Errorf("cannot parse: %w", err)
 		}
@@ -32,6 +32,11 @@ var genCmd = &cobra.Command{
 	},
 }
 
+var chromastyle string
+
 func init() {
 	rootCmd.AddCommand(genCmd)
+	rootCmd.Flags().StringVarP(
+		&chromastyle, "style", "s", "based", "Chroma style to use",
+	)
 }

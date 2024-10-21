@@ -19,26 +19,12 @@ type mdpage struct {
 	title, content string
 }
 
-var based = chroma.MustNewStyle(
-	"based",
-	chroma.StyleEntries{
-		chroma.Background:    "bg:#FFF",
-		chroma.Text:          "#000",
-		chroma.Comment:       "#777",
-		chroma.Keyword:       "#000",
-		chroma.Operator:      "#000",
-		chroma.Punctuation:   "#000",
-		chroma.Name:          "#000",
-		chroma.LiteralString: "#000",
-	},
-)
-
-func parsemdpage(content string) (*mdpage, error) {
+func parsemdpage(content, style string) (*mdpage, error) {
 	g := goldmark.New(
 		goldmark.WithExtensions(
 			extension.NewFootnote(),
 			hl.NewHighlighting(
-				hl.WithCustomStyle(based),
+				getstyle(style),
 				hl.WithFormatOptions(html.WithLineNumbers(false)),
 			),
 		),
@@ -49,6 +35,28 @@ func parsemdpage(content string) (*mdpage, error) {
 		return nil, fmt.Errorf("cannot render content: %w", err)
 	}
 	return &mdpage{gettitle(doc, content), s}, nil
+}
+
+func getstyle(name string) hl.Option {
+	style, ok := map[string]*chroma.Style{
+		"based": chroma.MustNewStyle(
+			"based",
+			chroma.StyleEntries{
+				chroma.Background:    "bg:#FFF",
+				chroma.Text:          "#000",
+				chroma.Comment:       "#777",
+				chroma.Keyword:       "#000",
+				chroma.Operator:      "#000",
+				chroma.Punctuation:   "#000",
+				chroma.Name:          "#000",
+				chroma.LiteralString: "#000",
+			},
+		),
+	}[name]
+	if !ok {
+		return hl.WithStyle(name)
+	}
+	return hl.WithCustomStyle(style)
 }
 
 func render(r renderer.Renderer, doc gm_ast.Node, content string) (string, error) {

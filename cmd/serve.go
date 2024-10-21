@@ -40,9 +40,9 @@ var serveCmd = &cobra.Command{
 
 func choosehandler(src, theme string, livereload bool) (http.Handler, error) {
 	if livereload {
-		return area.CreateLiveHandler(src, theme), nil
+		return area.CreateLiveHandler(src, theme, chromastyle), nil
 	}
-	h, err := ssg.NewHandler(src, theme)
+	h, err := ssg.NewHandler(src, theme, chromastyle)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get handler: %w", err)
 	}
@@ -60,6 +60,9 @@ func init() {
 	)
 	serveCmd.Flags().BoolVarP(
 		&livereload, "livereload", "D", false, "Enable live reloading",
+	)
+	serveCmd.Flags().StringVarP(
+		&chromastyle, "style", "s", "based", "Chroma style to use",
 	)
 	rootCmd.AddCommand(serveCmd)
 }

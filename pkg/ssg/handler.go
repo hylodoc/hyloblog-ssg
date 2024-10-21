@@ -21,8 +21,8 @@ type handler struct {
 	blog *area.Area
 }
 
-func NewHandler(src, theme string) (Handler, error) {
-	blog, err := area.ParseArea(src)
+func NewHandler(src, theme, chromastyle string) (Handler, error) {
+	blog, err := area.ParseArea(src, chromastyle)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse area: %w", err)
 	}

@@ -9,11 +9,12 @@ import (
 )
 
 type metadata struct {
-	URL        string               `yaml:"url"`
-	Published  parsabletime         `yaml:"published"`
-	Updated    parsabletime         `yaml:"updated"`
-	Author     []string             `yaml:"author"`
-	AuthorDefs map[string]authordef `yaml:"authors"`
+	URL         string               `yaml:"url"`
+	Published   parsabletime         `yaml:"published"`
+	Updated     parsabletime         `yaml:"updated"`
+	Author      []string             `yaml:"author"`
+	AuthorDefs  map[string]authordef `yaml:"authors"`
+	ChromaStyle string               `yaml:"chroma"`
 }
 
 func parsemetadata(raw string) (*metadata, error) {

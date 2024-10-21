@@ -10,11 +10,14 @@ import (
 )
 
 type ParseInfo struct {
-	ign    map[string]bool
-	gitdir string
+	ign         map[string]bool
+	gitdir      string
+	chromastyle string
 }
 
-func NewParseInfo() *ParseInfo { return &ParseInfo{map[string]bool{}, ""} }
+func NewParseInfo(chromastyle string) *ParseInfo {
+	return &ParseInfo{map[string]bool{}, "", chromastyle}
+}
 
 func (info *ParseInfo) Descend(dir, ignorefile string) (*ParseInfo, error) {
 	ign, err := augmentign(info.ign, filepath.Join(dir, ignorefile))
@@ -25,7 +28,7 @@ func (info *ParseInfo) Descend(dir, ignorefile string) (*ParseInfo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot check for gitdir: %w", err)
 	}
-	return &ParseInfo{ign, gitdir}, nil
+	return &ParseInfo{ign, gitdir, info.chromastyle}, nil
 }
 
 func augmentign(oldign map[string]bool, path string) (map[string]bool, error) {
@@ -115,4 +118,8 @@ func (info *ParseInfo) ShouldIgnore(name string) bool {
 
 func (info *ParseInfo) GitDir() (string, bool) {
 	return info.gitdir, info.gitdir != ""
+}
+
+func (info *ParseInfo) ChromaStyle() string {
+	return info.chromastyle
 }
