@@ -49,25 +49,13 @@ func (m *metadata) timing() *timing {
 	return &timing{published, updated}
 }
 
-func (m *metadata) definedauthors() []authordef {
-	return defineauthors(m.Author, m.AuthorDefs)
+func (m *metadata) authoring() *authoring {
+	return newAuthoring(m.Author, m.AuthorDefs)
 }
 
 type authordef struct {
 	Name string `yaml:"name"`
 	Page string `yaml:"page"`
-}
-
-func defineauthors(undef []string, defs map[string]authordef) []authordef {
-	var defined []authordef
-	for _, author := range undef {
-		if def, ok := defs[author]; ok {
-			defined = append(defined, def)
-		} else {
-			defined = append(defined, authordef{Name: author})
-		}
-	}
-	return defined
 }
 
 func tostrings(defs []authordef) []string {

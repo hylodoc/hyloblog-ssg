@@ -20,8 +20,7 @@ type Page struct {
 	title, url string
 	timing     *timing
 	doc        string
-	authors    []authordef          // authors of this page
-	authordefs map[string]authordef // definitions on this page
+	a          authoring
 }
 
 func ParsePage(path, chromastyle string) (*Page, error) {
@@ -42,12 +41,11 @@ func ParsePage(path, chromastyle string) (*Page, error) {
 		return nil, fmt.Errorf("cannot parse metadata: %w", err)
 	}
 	return &Page{
-		title:      mdpage.title,
-		url:        m.URL,
-		timing:     m.timing(),
-		doc:        mdpage.content,
-		authors:    m.definedauthors(),
-		authordefs: m.AuthorDefs,
+		title:  mdpage.title,
+		url:    m.URL,
+		timing: m.timing(),
+		doc:    mdpage.content,
+		a:      *m.authoring(),
 	}, nil
 }
 
@@ -116,9 +114,7 @@ func ParsePageGit(path, gitdir, chromastyle string) (*Page, error) {
 	if pg.timing == nil {
 		pg.timing = &info.timing
 	}
-	if len(pg.authors) == 0 && info.author != "" {
-		pg.authors = []authordef{authordef{Name: info.author}}
-	}
+	pg.a.addgitauthor(info.author)
 	return pg, nil
 }
 
@@ -217,11 +213,11 @@ func (pg *Page) GenerateIndex(
 type Post struct {
 	title, category, link string
 	timing                *timing
-	authors               []authordef
+	a                     authoring
 }
 
 func CreatePost(pg *Page, category, link string) *Post {
-	return &Post{pg.title, category, link, pg.timing, pg.authors}
+	return &Post{pg.title, category, link, pg.timing, pg.a}
 }
 
 func tothemeposts(posts []Post, index *Page) []theme.Post {
@@ -237,18 +233,10 @@ func tothemeposts(posts []Post, index *Page) []theme.Post {
 			Category: p.category,
 			Link:     p.link,
 			Date:     getdate(p.timing),
-			Authors:  getauthors(p.authors, index.authordefs),
+			Authors:  p.a.getauthors(&index.a),
 		}
 	}
 	return themeposts
-}
-
-func getauthors(undef []authordef, defs map[string]authordef) []theme.Author {
-	var authors []theme.Author
-	for _, author := range defineauthors(tostrings(undef), defs) {
-		authors = append(authors, theme.Author(author))
-	}
-	return authors
 }
 
 func (pg *Page) GenerateWithoutIndex(w io.Writer, themedir string) error {
@@ -260,7 +248,7 @@ func (pg *Page) GenerateWithoutIndex(w io.Writer, themedir string) error {
 		Title:   pg.title,
 		Content: pg.doc,
 		Date:    getdate(pg.timing),
-		Authors: getauthorsnoindex(pg.authors),
+		Authors: pg.a.getauthorsnoindex(),
 	})
 }
 
@@ -283,10 +271,6 @@ func (pg *Page) Generate(w io.Writer, themedir string, index *Page) error {
 		Content:   pg.doc,
 		SiteTitle: index.title,
 		Date:      getdate(pg.timing),
-		Authors:   getauthors(pg.authors, index.authordefs),
+		Authors:   pg.a.getauthors(&index.a),
 	})
-}
-
-func getauthorsnoindex(authors []authordef) []theme.Author {
-	return getauthors(authors, map[string]authordef{})
 }
