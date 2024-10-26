@@ -327,6 +327,59 @@ func filehandler(path string) http.HandlerFunc {
 	}
 }
 
+func (A *Area) GenerateWithBindings(
+	target, theme string,
+) (map[string]string, error) {
+	g := areainfo.NewGenInfo(
+		theme, target, nil, areainfo.PurposeDynamicServe,
+	)
+	if err := A.generate(target, g); err != nil {
+		return nil, fmt.Errorf("cannot generate: %w", err)
+	}
+	bindings := map[string]string{}
+	if err := A.handlebindings(target, g, bindings); err != nil {
+		return nil, fmt.Errorf("cannot get bindings: %w", err)
+	}
+	return bindings, nil
+}
+
+func (A *Area) handlebindings(
+	target string, g *areainfo.GenInfo, m map[string]string,
+) error {
+	if index, ok := A.pages[indexFile]; ok {
+		g = g.WithNewIndex(&index)
+	}
+	dir := filepath.Join(target, A.prefix)
+	for _, a := range A.subareas {
+		if err := a.handlebindings(dir, g, m); err != nil {
+			return fmt.Errorf(
+				"cannot handle subarea %q: %w",
+				filepath.Join(dir, a.prefix), err,
+			)
+		}
+	}
+	for name := range A.pages {
+		pg := A.pages[name]
+		path, err := pagehostpath(&pg, name, dir, g.Root())
+		if err != nil {
+			return fmt.Errorf(
+				"cannot make path for %q: %w", name, err,
+			)
+		}
+		m[path] = genpagehtmlpath(name, dir)
+	}
+	for name := range A.otherfiles {
+		path, err := filehostpath(name, dir, g.Root())
+		if err != nil {
+			return fmt.Errorf(
+				"cannot make path for %q: %w", name, err,
+			)
+		}
+		m[path] = filepath.Join(dir, name)
+	}
+	return nil
+}
+
 type LiveHandler struct {
 	src, theme, chromastyle string
 }

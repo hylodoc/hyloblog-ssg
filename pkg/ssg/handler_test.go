@@ -2,9 +2,8 @@ package ssg
 
 import (
 	"fmt"
+	"os"
 	"testing"
-
-	"github.com/xr0-org/progstack-ssg/internal/ast/area"
 )
 
 func TestHandler(t *testing.T) {
@@ -14,51 +13,26 @@ func TestHandler(t *testing.T) {
 }
 
 func testHandler() error {
-	h, err := NewHandler("test", "../../theme/lit")
+	target, err := os.MkdirTemp("", "")
 	if err != nil {
-		return fmt.Errorf("cannot make handler: %w", err)
+		return fmt.Errorf("cannot make tempdir: %w", err)
 	}
-	expected := []string{
+	bindings, err := GenerateSiteWithBindings(
+		"test", target, "../../theme/lit", "algol_nu",
+	)
+	if err != nil {
+		return fmt.Errorf("cannot generate: %w", err)
+	}
+	for _, path := range []string{
 		"/",
 		"/abc/def",
 		"/nest/post",
 		"/nest-no-ignore/README",
 		"/nest-no-ignore/post",
-	}
-	ifc, err := h.AreaInterface()
-	if err != nil {
-		return fmt.Errorf("cannot make interface: %w", err)
-	}
-	return confirmsetequal(expected, getallpages(ifc))
-}
-
-func getallpages(ifc area.AreaInterface) []string {
-	var pages []string
-	for _, pg := range ifc.Pages() {
-		pages = append(pages, pg.Link())
-	}
-	for _, a := range ifc.Subareas() {
-		pages = append(pages, getallpages(a)...)
-	}
-	return pages
-}
-
-func confirmsetequal(arr, arr0 []string) error {
-	if len(arr) != len(arr0) {
-		return fmt.Errorf("length mismatch")
-	}
-	for _, s := range arr {
-		if !contains(arr0, s) {
-			return fmt.Errorf("%q not found", s)
+	} {
+		if _, ok := bindings[path]; !ok {
+			return fmt.Errorf("%q not found", path)
 		}
 	}
 	return nil
-}
-func contains(arr []string, item string) bool {
-	for _, s := range arr {
-		if s == item {
-			return true
-		}
-	}
-	return false
 }

@@ -8,7 +8,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/xr0-org/progstack-ssg/internal/ast/area"
-	"github.com/xr0-org/progstack-ssg/pkg/ssg"
 )
 
 var serveCmd = &cobra.Command{
@@ -42,9 +41,13 @@ func choosehandler(src, theme string, livereload bool) (http.Handler, error) {
 	if livereload {
 		return area.CreateLiveHandler(src, theme, chromastyle), nil
 	}
-	h, err := ssg.NewHandler(src, theme, chromastyle)
+	blog, err := area.ParseArea(src, chromastyle)
 	if err != nil {
-		return nil, fmt.Errorf("cannot get handler: %w", err)
+		return nil, fmt.Errorf("cannot parse area: %w", err)
+	}
+	h, err := blog.Handler(theme)
+	if err != nil {
+		return nil, fmt.Errorf("cannot make http handler: %w", err)
 	}
 	return h, nil
 }
