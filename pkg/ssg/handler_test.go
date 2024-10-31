@@ -23,15 +23,17 @@ func testHandler() error {
 	if err != nil {
 		return fmt.Errorf("cannot generate: %w", err)
 	}
-	for _, path := range []string{
+	for _, url := range []string{
 		"/",
 		"/abc/def",
 		"/nest/post",
 		"/nest-no-ignore/README",
 		"/nest-no-ignore/post",
 	} {
-		if _, ok := bindings[path]; !ok {
-			return fmt.Errorf("%q not found", path)
+		if file, ok := bindings[url]; !ok {
+			return fmt.Errorf("%q not found", url)
+		} else {
+			fmt.Println(url, file)
 		}
 	}
 	return nil

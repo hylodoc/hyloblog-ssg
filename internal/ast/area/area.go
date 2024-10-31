@@ -12,6 +12,7 @@ import (
 	"github.com/xr0-org/progstack-ssg/internal/assert"
 	"github.com/xr0-org/progstack-ssg/internal/ast/area/areainfo"
 	"github.com/xr0-org/progstack-ssg/internal/ast/area/readdir"
+	"github.com/xr0-org/progstack-ssg/internal/ast/area/sitefile"
 	"github.com/xr0-org/progstack-ssg/internal/ast/page"
 )
 
@@ -329,14 +330,14 @@ func filehandler(path string) http.HandlerFunc {
 
 func (A *Area) GenerateWithBindings(
 	target, theme string,
-) (map[string]string, error) {
+) (map[string]sitefile.File, error) {
 	g := areainfo.NewGenInfo(
 		theme, target, nil, areainfo.PurposeDynamicServe,
 	)
 	if err := A.generate(target, g); err != nil {
 		return nil, fmt.Errorf("cannot generate: %w", err)
 	}
-	bindings := map[string]string{}
+	bindings := map[string]sitefile.File{}
 	if err := A.handlebindings(target, g, bindings); err != nil {
 		return nil, fmt.Errorf("cannot get bindings: %w", err)
 	}
@@ -344,7 +345,7 @@ func (A *Area) GenerateWithBindings(
 }
 
 func (A *Area) handlebindings(
-	target string, g *areainfo.GenInfo, m map[string]string,
+	target string, g *areainfo.GenInfo, m map[string]sitefile.File,
 ) error {
 	if index, ok := A.pages[indexFile]; ok {
 		g = g.WithNewIndex(&index)
@@ -366,7 +367,7 @@ func (A *Area) handlebindings(
 				"cannot make path for %q: %w", name, err,
 			)
 		}
-		m[path] = genpagehtmlpath(name, dir)
+		m[path] = sitefile.NewFile(genpagehtmlpath(name, dir), true)
 	}
 	for name := range A.otherfiles {
 		path, err := filehostpath(name, dir, g.Root())
@@ -375,7 +376,7 @@ func (A *Area) handlebindings(
 				"cannot make path for %q: %w", name, err,
 			)
 		}
-		m[path] = filepath.Join(dir, name)
+		m[path] = sitefile.NewFile(filepath.Join(dir, name), false)
 	}
 	return nil
 }
