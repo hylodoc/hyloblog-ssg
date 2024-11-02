@@ -386,14 +386,7 @@ func pagefile(name, dir string, pg *page.Page) sitefile.File {
 	if name == indexFile {
 		return sitefile.NonPostFile(filepath)
 	}
-	return newpost(filepath, pg)
-}
-
-func newpost(path string, pg *page.Page) sitefile.File {
-	if time, ok := pg.Time(); ok {
-		return sitefile.TimedPostFile(path, time)
-	}
-	return sitefile.PostFile(path)
+	return pg.ToPostFile(filepath)
 }
 
 type LiveHandler struct {

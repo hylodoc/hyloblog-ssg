@@ -13,6 +13,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/xr0-org/progstack-ssg/internal/assert"
+	"github.com/xr0-org/progstack-ssg/internal/ast/area/sitefile"
 	"github.com/xr0-org/progstack-ssg/internal/theme"
 )
 
@@ -259,12 +260,19 @@ func getdate(t *timing) string {
 	return t.published.Format("Jan 02, 2006")
 }
 
-func (pg *Page) Time() (time.Time, bool) {
+func (pg *Page) time() (time.Time, bool) {
 	t := pg.timing
 	if t == nil || t.published.IsZero() {
 		return time.Time{}, false
 	}
 	return t.published, true
+}
+
+func (pg *Page) ToPostFile(path string) sitefile.File {
+	if time, ok := pg.time(); ok {
+		return sitefile.TimedPostFile(path, pg.title, time)
+	}
+	return sitefile.PostFile(path, pg.title)
 }
 
 func (pg *Page) Generate(w io.Writer, themedir string, index *Page) error {
