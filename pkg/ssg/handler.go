@@ -2,6 +2,7 @@ package ssg
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/xr0-org/progstack-ssg/internal/ast/area"
 )
@@ -13,6 +14,9 @@ type File interface {
 
 	// IsPost indicates whether or not the File is a post.
 	IsPost() bool
+
+	// Time is the timestamp associated with the File, if available.
+	Time() (time.Time, bool)
 }
 
 func GenerateSiteWithBindings(

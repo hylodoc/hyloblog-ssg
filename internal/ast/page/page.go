@@ -259,6 +259,14 @@ func getdate(t *timing) string {
 	return t.published.Format("Jan 02, 2006")
 }
 
+func (pg *Page) Time() (time.Time, bool) {
+	t := pg.timing
+	if t == nil || t.published.IsZero() {
+		return time.Time{}, false
+	}
+	return t.published, true
+}
+
 func (pg *Page) Generate(w io.Writer, themedir string, index *Page) error {
 	assert.Assert(index != nil)
 

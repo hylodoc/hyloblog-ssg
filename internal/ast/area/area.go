@@ -367,7 +367,7 @@ func (A *Area) handlebindings(
 				"cannot make path for %q: %w", name, err,
 			)
 		}
-		m[path] = sitefile.NewFile(genpagehtmlpath(name, dir), true)
+		m[path] = newpost(genpagehtmlpath(name, dir), &pg)
 	}
 	for name := range A.otherfiles {
 		path, err := filehostpath(name, dir, g.Root())
@@ -376,9 +376,16 @@ func (A *Area) handlebindings(
 				"cannot make path for %q: %w", name, err,
 			)
 		}
-		m[path] = sitefile.NewFile(filepath.Join(dir, name), false)
+		m[path] = sitefile.NonPostFile(filepath.Join(dir, name))
 	}
 	return nil
+}
+
+func newpost(path string, pg *page.Page) sitefile.File {
+	if time, ok := pg.Time(); ok {
+		return sitefile.TimedPostFile(path, time)
+	}
+	return sitefile.PostFile(path)
 }
 
 type LiveHandler struct {
