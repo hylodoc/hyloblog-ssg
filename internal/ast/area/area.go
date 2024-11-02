@@ -367,7 +367,7 @@ func (A *Area) handlebindings(
 				"cannot make path for %q: %w", name, err,
 			)
 		}
-		m[path] = newpost(genpagehtmlpath(name, dir), &pg)
+		m[path] = pagefile(name, dir, &pg)
 	}
 	for name := range A.otherfiles {
 		path, err := filehostpath(name, dir, g.Root())
@@ -379,6 +379,14 @@ func (A *Area) handlebindings(
 		m[path] = sitefile.NonPostFile(filepath.Join(dir, name))
 	}
 	return nil
+}
+
+func pagefile(name, dir string, pg *page.Page) sitefile.File {
+	filepath := genpagehtmlpath(name, dir)
+	if name == indexFile {
+		return sitefile.NonPostFile(filepath)
+	}
+	return newpost(filepath, pg)
 }
 
 func newpost(path string, pg *page.Page) sitefile.File {
