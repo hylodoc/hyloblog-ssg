@@ -19,6 +19,7 @@
 	</head>
 	<body>
 		<div class="c">
+			{{ .Head }}
 			{{ .Content }}
 
 			{{ range .Posts }}
@@ -39,6 +40,7 @@
 				<h2><a href="{{ .Link }}">{{ .Title }}</a></h2>
 			</div>
 			{{ end }}
+			{{ .Foot }}
 		</div>
 	</body>
 </html>

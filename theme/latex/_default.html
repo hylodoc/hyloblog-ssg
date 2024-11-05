@@ -29,6 +29,7 @@
 	</head>
 
 	<body class="libertinus">
+		{{ .Head }}
 		<p class="author">
 			{{ range .Authors}}
 				{{ if .Page }}
@@ -41,5 +42,6 @@
 		<article>
 			{{ .Content }}
 		</article>
+		{{ .Foot }}
 	</body>
 </html>

@@ -18,7 +18,13 @@ func testHandler() error {
 		return fmt.Errorf("cannot make tempdir: %w", err)
 	}
 	bindings, err := GenerateSiteWithBindings(
-		"test", target, "../../theme/lit", "algol_nu",
+		"test", target,
+		"../../theme/lit", "algol_nu",
+		"HEADER", "FOOTER",
+		map[string]CustomPage{
+			"/xyz": NewCustomPage("Xr0", "<x>Xr0</x>"),
+			"/lmn": NewCustomPage("hello", "<b>hello, world</b>"),
+		},
 	)
 	if err != nil {
 		return fmt.Errorf("cannot generate: %w", err)
@@ -29,6 +35,8 @@ func testHandler() error {
 		"/nest/post",
 		"/nest-no-ignore/README",
 		"/nest-no-ignore/post",
+		"/xyz",
+		"/lmn",
 	} {
 		if file, ok := bindings[url]; !ok {
 			return fmt.Errorf("%q not found", url)
@@ -37,4 +45,9 @@ func testHandler() error {
 		}
 	}
 	return nil
+}
+
+func readfile(file string) (string, error) {
+	b, err := os.ReadFile(file)
+	return string(b), err
 }

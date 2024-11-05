@@ -5,6 +5,7 @@
 	<link rel="stylesheet" href="https://latex.vercel.app/style.css">
 	</head>
 	<body>
+		{{ .Head }}
 		{{ .Content }}
 
 		{{ range .Posts }}
@@ -13,5 +14,6 @@
 
 		</div>
 		{{ end }}
+		{{ .Foot }}
 	</body>
 </html>

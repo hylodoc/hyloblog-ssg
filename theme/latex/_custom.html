@@ -1,10 +1,9 @@
+<!DOCTYPE html>
 <html>
 	<head>
 		<title>{{ .Title }}</title>
 
-		<link href="https://fonts.googleapis.com/css?family=Nunito:300,400,700" rel="stylesheet">
-		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ajusa/lit@latest/dist/lit.css" />
-		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ajusa/lit@latest/dist/util.css" />
+		<link rel="stylesheet" href="https://latex.vercel.app/style.css">
 		<style>
 			h2 a,h3 a,h4 a,h5 a,h6 a {
 				opacity: 0;
@@ -15,12 +14,6 @@
 			}
 			h1,h2,h3,h4,h5,h6 {
 				cursor: default;
-			}
-			blockquote {
-				margin-block-start: 1em;
-				margin-block-end: 1em;
-				margin-inline-start: 20px;
-				margin-inline-end: 20px;
 			}
 		</style>
 
@@ -34,23 +27,7 @@
 			      integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk"
 			      crossorigin="anonymous" onload="renderMathInElement(document.body);"></script>
 	</head>
-	<body>
-		<div class="c">
-			{{ .Head }}
-			<h1><a style="color: #ccc" href="/">{{ .SiteTitle }}</a></h1>
-			<p>
-			{{ .Date }}
-			{{ range .Authors}}
-				·
-				{{ if .Page }}
-					<a href="{{ .Page }}">{{ .Name }}</a>
-				{{ else }}
-					{{ .Name }}
-				{{ end }}
-			{{end}}
-			</p>
-			{{ .Content }}
-			{{ .Foot }}
-		</div>
+	<body class="libertinus">
+		{{ .Content }}
 	</body>
 </html>

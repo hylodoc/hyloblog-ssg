@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/xr0-org/progstack-ssg/internal/assert"
@@ -91,7 +92,7 @@ func parse(dir, parent string, info *areainfo.ParseInfo) (*Area, error) {
 				path, err,
 			)
 		}
-		A.pages[base] = *page
+		A.pages[base] = page
 	}
 	return A, nil
 }
@@ -107,7 +108,7 @@ func getprefix(dir, parent string) (string, error) {
 	return prefix, nil
 }
 
-func parsepage(path string, info *areainfo.ParseInfo) (*page.Page, error) {
+func parsepage(path string, info *areainfo.ParseInfo) (page.Page, error) {
 	if gitdir, ok := info.GitDir(); ok {
 		return page.ParsePageGit(path, gitdir, info.ChromaStyle())
 	}
@@ -123,15 +124,45 @@ func includefile(name string) bool {
 	}
 }
 
+func (A *Area) Inject(m map[string]sitefile.CustomPage) error {
+	for url, data := range m {
+		if url[0] != '/' {
+			return fmt.Errorf("relative url must start with slash")
+		}
+		if err := A.inject(url[1:], data); err != nil {
+			return fmt.Errorf("cannot inject %q: %w", url, err)
+		}
+	}
+	return nil
+}
+
+func (A *Area) inject(url string, pg sitefile.CustomPage) error {
+	parts := strings.Split(url, "/")
+	switch len(parts) {
+	case 1:
+		url := parts[0]
+		if _, ok := A.pages[url]; ok {
+			return fmt.Errorf("page already exists")
+		}
+		if _, ok := A.otherfiles[url]; ok {
+			return fmt.Errorf("other file already exists")
+		}
+		A.pages[url] = page.CustomPage(pg.Title(), pg.Content())
+		return nil
+	default:
+		return fmt.Errorf("multislash URLs not supported")
+	}
+}
+
 func (A *Area) GenerateSite(
 	target string, theme string, p areainfo.Purpose,
 ) error {
-	return A.generate(target, areainfo.NewGenInfo(theme, target, nil, p))
+	return A.generate(target, areainfo.NewGenInfo(theme, target, p))
 }
 
 func (A *Area) generate(target string, g *areainfo.GenInfo) error {
 	if index, ok := A.pages[indexFile]; ok {
-		g = g.WithNewIndex(&index)
+		g = g.WithNewIndex(index)
 	}
 	dir := filepath.Join(target, A.prefix)
 	if err := os.MkdirAll(dir, 0777); err != nil {
@@ -146,7 +177,7 @@ func (A *Area) generate(target string, g *areainfo.GenInfo) error {
 		}
 	}
 	for name, page := range A.pages {
-		if err := A.generatepage(name, dir, &page, g); err != nil {
+		if err := A.generatepage(name, dir, page, g); err != nil {
 			return fmt.Errorf(
 				"cannot generate page: %q: %w", name, err,
 			)
@@ -161,7 +192,7 @@ func (A *Area) generate(target string, g *areainfo.GenInfo) error {
 }
 
 func (A *Area) generatepage(
-	name, dir string, page *page.Page, g *areainfo.GenInfo,
+	name, dir string, page page.Page, g *areainfo.GenInfo,
 ) error {
 	f, err := os.Create(genpagehtmlpath(name, dir))
 	if err != nil {
@@ -169,14 +200,12 @@ func (A *Area) generatepage(
 	}
 	defer f.Close()
 	if name == indexFile {
-		return page.GenerateIndex(
-			f, A.getposts(dir, g), g.Theme(),
-		)
+		return page.GenerateIndex(f, A.getposts(dir, g), g)
 	}
 	if index, ok := g.GetIndex(); ok {
-		return page.Generate(f, g.Theme(), index)
+		return page.Generate(f, g, index)
 	}
-	return page.GenerateWithoutIndex(f, g.Theme())
+	return page.GenerateWithoutIndex(f, g)
 }
 
 func genpagehtmlpath(name, dir string) string {
@@ -201,13 +230,12 @@ func (A *Area) getposts(dir string, g *areainfo.GenInfo) []page.Post {
 			continue
 		}
 		pg := A.pages[name]
-		link, err := pg.Link(
-			filepath.Join(dir, name),
-			g.Root(),
-			g.DynamicLinks(),
-		)
+		if !pg.IsPost() {
+			continue
+		}
+		link, err := pg.Link(filepath.Join(dir, name), g)
 		assert.Assert(err == nil)
-		posts = append(posts, *page.CreatePost(&pg, A.prefix, link))
+		posts = append(posts, *pg.AsPost(A.prefix, link))
 	}
 	return posts
 }
@@ -256,16 +284,19 @@ func (A *Area) Handler(theme string) (*Handler, error) {
 	}
 	r := mux.NewRouter()
 	r.StrictSlash(true)
-	return &Handler{r, target}, A.registerhandlers(
-		target, areainfo.NewGenInfo(theme, target, nil, purpose), r,
-	)
+	return &Handler{r, target},
+		A.registerhandlers(
+			target,
+			areainfo.NewGenInfo(theme, target, purpose),
+			r,
+		)
 }
 
 func (A *Area) registerhandlers(
 	target string, g *areainfo.GenInfo, mux *mux.Router,
 ) error {
 	if index, ok := A.pages[indexFile]; ok {
-		g = g.WithNewIndex(&index)
+		g = g.WithNewIndex(index)
 	}
 	dir := filepath.Join(target, A.prefix)
 	for _, a := range A.subareas {
@@ -277,8 +308,7 @@ func (A *Area) registerhandlers(
 		}
 	}
 	for name := range A.pages {
-		pg := A.pages[name]
-		path, err := pagehostpath(&pg, name, dir, g.Root())
+		path, err := pagehostpath(A.pages[name], name, dir, g)
 		if err != nil {
 			return fmt.Errorf(
 				"cannot make path for %q: %w", name, err,
@@ -298,9 +328,11 @@ func (A *Area) registerhandlers(
 	return nil
 }
 
-func pagehostpath(pg *page.Page, name, dir, rootdir string) (string, error) {
+func pagehostpath(
+	pg page.Page, name, dir string, g *areainfo.GenInfo,
+) (string, error) {
 	if name == indexFile {
-		path, err := filepath.Rel(rootdir, dir)
+		path, err := filepath.Rel(g.Root(), dir)
 		if err != nil {
 			return "", err
 		}
@@ -309,7 +341,7 @@ func pagehostpath(pg *page.Page, name, dir, rootdir string) (string, error) {
 		}
 		return fmt.Sprintf("/%s", path), nil
 	}
-	return pg.Link(filepath.Join(dir, name), rootdir, true)
+	return pg.Link(filepath.Join(dir, name), g)
 }
 
 func filehostpath(name, dir, rootdir string) (string, error) {
@@ -329,11 +361,11 @@ func filehandler(path string) http.HandlerFunc {
 }
 
 func (A *Area) GenerateWithBindings(
-	target, theme string,
+	target, theme, head, foot string,
 ) (map[string]sitefile.File, error) {
 	g := areainfo.NewGenInfo(
-		theme, target, nil, areainfo.PurposeDynamicServe,
-	)
+		theme, target, areainfo.PurposeDynamicServe,
+	).WithHeadFoot(head, foot)
 	if err := A.generate(target, g); err != nil {
 		return nil, fmt.Errorf("cannot generate: %w", err)
 	}
@@ -348,7 +380,7 @@ func (A *Area) handlebindings(
 	target string, g *areainfo.GenInfo, m map[string]sitefile.File,
 ) error {
 	if index, ok := A.pages[indexFile]; ok {
-		g = g.WithNewIndex(&index)
+		g = g.WithNewIndex(index)
 	}
 	dir := filepath.Join(target, A.prefix)
 	for _, a := range A.subareas {
@@ -361,13 +393,13 @@ func (A *Area) handlebindings(
 	}
 	for name := range A.pages {
 		pg := A.pages[name]
-		path, err := pagehostpath(&pg, name, dir, g.Root())
+		path, err := pagehostpath(pg, name, dir, g)
 		if err != nil {
 			return fmt.Errorf(
 				"cannot make path for %q: %w", name, err,
 			)
 		}
-		m[path] = pagefile(name, dir, &pg)
+		m[path] = pagefile(name, dir, pg)
 	}
 	for name := range A.otherfiles {
 		path, err := filehostpath(name, dir, g.Root())
@@ -381,12 +413,12 @@ func (A *Area) handlebindings(
 	return nil
 }
 
-func pagefile(name, dir string, pg *page.Page) sitefile.File {
+func pagefile(name, dir string, pg page.Page) sitefile.File {
 	filepath := genpagehtmlpath(name, dir)
 	if name == indexFile {
 		return sitefile.NonPostFile(filepath)
 	}
-	return pg.ToPostFile(filepath)
+	return pg.ToFile(filepath)
 }
 
 type LiveHandler struct {
