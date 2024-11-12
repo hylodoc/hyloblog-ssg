@@ -8,13 +8,13 @@ import (
 )
 
 type Theme struct {
-	index, def, cust *template.Template
+	index, def *template.Template
+	dir        string
 }
 
 const (
 	themeIndex   = "index.html"
 	themeDefault = "_default.html"
-	themeCustom  = "_custom.html"
 )
 
 func ParseTheme(dir string) (*Theme, error) {
@@ -26,11 +26,7 @@ func ParseTheme(dir string) (*Theme, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot get default: %w", err)
 	}
-	cust, err := template.ParseFiles(filepath.Join(dir, themeCustom))
-	if err != nil {
-		return nil, fmt.Errorf("cannot get default: %w", err)
-	}
-	return &Theme{index, def, cust}, nil
+	return &Theme{index, def, dir}, nil
 }
 
 type IndexData struct {
@@ -64,10 +60,12 @@ func (thm *Theme) ExecuteDefault(w io.Writer, data *DefaultData) error {
 	return thm.def.Execute(w, data)
 }
 
-type CustomData struct {
-	Title, Content string
-}
-
-func (thm *Theme) ExecuteCustom(w io.Writer, data *CustomData) error {
-	return thm.cust.Execute(w, data)
+func (thm *Theme) ExecuteCustom(
+	w io.Writer, tmplpath string, data interface{},
+) error {
+	tmpl, err := template.ParseFiles(filepath.Join(thm.dir, tmplpath))
+	if err != nil {
+		return fmt.Errorf("cannot get template: %w", err)
+	}
+	return tmpl.Execute(w, data)
 }

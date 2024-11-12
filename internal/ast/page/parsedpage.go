@@ -201,11 +201,7 @@ func getupdated(commits []object.Commit) (*time.Time, error) {
 }
 
 func (pg *parsedpage) GenerateIndex(w io.Writer, posts []Post, pi PageInfo) error {
-	thm, err := theme.ParseTheme(pi.Theme())
-	if err != nil {
-		return fmt.Errorf("cannot parse theme: %w", err)
-	}
-	return thm.ExecuteIndex(w, &theme.IndexData{
+	return pi.Theme().ExecuteIndex(w, &theme.IndexData{
 		Title:   pg.title,
 		Content: pg.doc,
 		Posts:   tothemeposts(posts, pg),
@@ -246,11 +242,7 @@ func (pg *parsedpage) AsPost(category, link string) *Post {
 }
 
 func (pg *parsedpage) GenerateWithoutIndex(w io.Writer, pi PageInfo) error {
-	thm, err := theme.ParseTheme(pi.Theme())
-	if err != nil {
-		return fmt.Errorf("cannot parse theme: %w", err)
-	}
-	return thm.ExecuteDefault(w, &theme.DefaultData{
+	return pi.Theme().ExecuteDefault(w, &theme.DefaultData{
 		Title:   pg.title,
 		Content: pg.doc,
 		Date:    getdate(pg.timing),
@@ -287,11 +279,7 @@ func (pg *parsedpage) Generate(w io.Writer, pi PageInfo, index Page) error {
 	indexppg, ok := index.(*parsedpage)
 	assert.Assert(ok)
 
-	thm, err := theme.ParseTheme(pi.Theme())
-	if err != nil {
-		return fmt.Errorf("cannot parse theme: %w", err)
-	}
-	return thm.ExecuteDefault(w, &theme.DefaultData{
+	return pi.Theme().ExecuteDefault(w, &theme.DefaultData{
 		Title:     pg.title,
 		Content:   pg.doc,
 		SiteTitle: indexppg.title,

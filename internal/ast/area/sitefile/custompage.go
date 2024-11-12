@@ -1,6 +1,6 @@
 package sitefile
 
 type CustomPage interface {
-	Title() string
-	Content() string
+	Template() string
+	Data() map[string]string
 }

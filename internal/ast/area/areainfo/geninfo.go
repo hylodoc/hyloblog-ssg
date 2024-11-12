@@ -3,13 +3,15 @@ package areainfo
 import (
 	"github.com/xr0-org/progstack-ssg/internal/assert"
 	"github.com/xr0-org/progstack-ssg/internal/ast/page"
+	"github.com/xr0-org/progstack-ssg/internal/theme"
 )
 
 type GenInfo struct {
-	theme, rootdir string
-	index          page.Page
-	purpose        Purpose
-	head, foot     string
+	rootdir    string
+	index      page.Page
+	purpose    Purpose
+	head, foot string
+	theme      *theme.Theme
 }
 
 func (info *GenInfo) copy() *GenInfo {
@@ -23,7 +25,7 @@ func (info *GenInfo) copy() *GenInfo {
 	}
 }
 
-func NewGenInfo(theme, rootdir string, purpose Purpose) *GenInfo {
+func NewGenInfo(theme *theme.Theme, rootdir string, purpose Purpose) *GenInfo {
 	return &GenInfo{
 		theme:   theme,
 		rootdir: rootdir,
@@ -61,10 +63,10 @@ func (info *GenInfo) DynamicLinks() bool {
 	}
 }
 
-func (info *GenInfo) Root() string  { return info.rootdir }
-func (info *GenInfo) Theme() string { return info.theme }
-func (info *GenInfo) Head() string  { return info.head }
-func (info *GenInfo) Foot() string  { return info.foot }
+func (info *GenInfo) Theme() *theme.Theme { return info.theme }
+func (info *GenInfo) Root() string        { return info.rootdir }
+func (info *GenInfo) Head() string        { return info.head }
+func (info *GenInfo) Foot() string        { return info.foot }
 
 type Purpose int
 

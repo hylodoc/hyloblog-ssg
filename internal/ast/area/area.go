@@ -15,6 +15,7 @@ import (
 	"github.com/xr0-org/progstack-ssg/internal/ast/area/readdir"
 	"github.com/xr0-org/progstack-ssg/internal/ast/area/sitefile"
 	"github.com/xr0-org/progstack-ssg/internal/ast/page"
+	"github.com/xr0-org/progstack-ssg/internal/theme"
 )
 
 const (
@@ -147,7 +148,7 @@ func (A *Area) inject(url string, pg sitefile.CustomPage) error {
 		if _, ok := A.otherfiles[url]; ok {
 			return fmt.Errorf("other file already exists")
 		}
-		A.pages[url] = page.CustomPage(pg.Title(), pg.Content())
+		A.pages[url] = page.CustomPage(pg.Template(), pg.Data())
 		return nil
 	default:
 		return fmt.Errorf("multislash URLs not supported")
@@ -155,9 +156,13 @@ func (A *Area) inject(url string, pg sitefile.CustomPage) error {
 }
 
 func (A *Area) GenerateSite(
-	target string, theme string, p areainfo.Purpose,
+	target string, themedir string, p areainfo.Purpose,
 ) error {
-	return A.generate(target, areainfo.NewGenInfo(theme, target, p))
+	thm, err := theme.ParseTheme(themedir)
+	if err != nil {
+		return fmt.Errorf("cannot parse theme: %w", err)
+	}
+	return A.generate(target, areainfo.NewGenInfo(thm, target, p))
 }
 
 func (A *Area) generate(target string, g *areainfo.GenInfo) error {
@@ -273,21 +278,25 @@ func (h *Handler) Destroy() error {
 	return os.RemoveAll(h.targetdir)
 }
 
-func (A *Area) Handler(theme string) (*Handler, error) {
+func (A *Area) Handler(themedir string) (*Handler, error) {
 	target, err := os.MkdirTemp("", "")
 	if err != nil {
 		return nil, fmt.Errorf("cannot make tempdir: %w", err)
 	}
 	purpose := areainfo.PurposeDynamicServe
-	if err := A.GenerateSite(target, theme, purpose); err != nil {
+	if err := A.GenerateSite(target, themedir, purpose); err != nil {
 		return nil, fmt.Errorf("cannot generate site: %w", err)
 	}
 	r := mux.NewRouter()
 	r.StrictSlash(true)
+	thm, err := theme.ParseTheme(themedir)
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse theme: %w", err)
+	}
 	return &Handler{r, target},
 		A.registerhandlers(
 			target,
-			areainfo.NewGenInfo(theme, target, purpose),
+			areainfo.NewGenInfo(thm, target, purpose),
 			r,
 		)
 }
@@ -361,10 +370,14 @@ func filehandler(path string) http.HandlerFunc {
 }
 
 func (A *Area) GenerateWithBindings(
-	target, theme, head, foot string,
+	target, themedir, head, foot string,
 ) (map[string]sitefile.File, error) {
+	thm, err := theme.ParseTheme(themedir)
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse theme: %w", err)
+	}
 	g := areainfo.NewGenInfo(
-		theme, target, areainfo.PurposeDynamicServe,
+		thm, target, areainfo.PurposeDynamicServe,
 	).WithHeadFoot(head, foot)
 	if err := A.generate(target, g); err != nil {
 		return nil, fmt.Errorf("cannot generate: %w", err)

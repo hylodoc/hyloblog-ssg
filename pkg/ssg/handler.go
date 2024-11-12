@@ -56,18 +56,21 @@ func toinjectmap(m1 map[string]CustomPage) map[string]sitefile.CustomPage {
 
 // A CustomPage is a page generated without existing in the source directory.
 type CustomPage interface {
-	Title() string
-	Content() string
+	Template() string
+	Data() map[string]string
 }
 
 type custompage struct {
-	title, content string
+	template string
+	data     map[string]string
 }
 
-// NewCustomPage returns a CustomPage.
-func NewCustomPage(title, content string) CustomPage {
-	return &custompage{title, content}
-}
+func (pg *custompage) Template() string        { return pg.template }
+func (pg *custompage) Data() map[string]string { return pg.data }
 
-func (pg *custompage) Title() string   { return pg.title }
-func (pg *custompage) Content() string { return pg.content }
+func NewSubscriberPage(url string) CustomPage {
+	return &custompage{
+		"subscribe.html",
+		map[string]string{"FormAction": url},
+	}
+}

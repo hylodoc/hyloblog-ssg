@@ -22,8 +22,7 @@ func testHandler() error {
 		"../../theme/lit", "algol_nu",
 		"HEADER", "FOOTER",
 		map[string]CustomPage{
-			"/xyz": NewCustomPage("Xr0", "<x>Xr0</x>"),
-			"/lmn": NewCustomPage("hello", "<b>hello, world</b>"),
+			"/sub": NewSubscriberPage("https://google.com"),
 		},
 	)
 	if err != nil {
@@ -35,8 +34,7 @@ func testHandler() error {
 		"/nest/post",
 		"/nest-no-ignore/README",
 		"/nest-no-ignore/post",
-		"/xyz",
-		"/lmn",
+		"/sub",
 	} {
 		if file, ok := bindings[url]; !ok {
 			return fmt.Errorf("%q not found", url)

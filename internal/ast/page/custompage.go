@@ -7,15 +7,15 @@ import (
 
 	"github.com/xr0-org/progstack-ssg/internal/assert"
 	"github.com/xr0-org/progstack-ssg/internal/ast/area/sitefile"
-	"github.com/xr0-org/progstack-ssg/internal/theme"
 )
 
 type custompage struct {
-	title, content string
+	template string
+	data     interface{}
 }
 
-func CustomPage(title, content string) *custompage {
-	return &custompage{title, content}
+func CustomPage(template string, data interface{}) *custompage {
+	return &custompage{template, data}
 }
 
 func (pg *custompage) Link(path string, pi PageInfo) (string, error) {
@@ -36,14 +36,7 @@ func (pg *custompage) GenerateIndex(
 }
 
 func (pg *custompage) GenerateWithoutIndex(w io.Writer, pi PageInfo) error {
-	thm, err := theme.ParseTheme(pi.Theme())
-	if err != nil {
-		return fmt.Errorf("cannot parse theme: %w", err)
-	}
-	return thm.ExecuteCustom(w, &theme.CustomData{
-		Title:   pg.title,
-		Content: pg.content,
-	})
+	return pi.Theme().ExecuteCustom(w, pg.template, pg.data)
 }
 
 func (pg *custompage) Generate(w io.Writer, pi PageInfo, index Page) error {
@@ -58,5 +51,5 @@ func (pg *custompage) AsPost(_, _ string) *Post {
 }
 
 func (pg *custompage) ToFile(path string) sitefile.File {
-	return sitefile.PostFile(path, pg.title)
+	return sitefile.NonPostFile(path)
 }

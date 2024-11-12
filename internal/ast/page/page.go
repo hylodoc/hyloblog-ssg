@@ -4,6 +4,7 @@ import (
 	"io"
 
 	"github.com/xr0-org/progstack-ssg/internal/ast/area/sitefile"
+	"github.com/xr0-org/progstack-ssg/internal/theme"
 )
 
 type Page interface {
@@ -20,7 +21,7 @@ type Page interface {
 }
 
 type PageInfo interface {
-	Theme() string
+	Theme() *theme.Theme
 	Head() string
 	Foot() string
 	Root() string
