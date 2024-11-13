@@ -11,10 +11,10 @@ import (
 
 type custompage struct {
 	template string
-	data     interface{}
+	data     map[string]string
 }
 
-func CustomPage(template string, data interface{}) *custompage {
+func CustomPage(template string, data map[string]string) *custompage {
 	return &custompage{template, data}
 }
 
@@ -40,7 +40,28 @@ func (pg *custompage) GenerateWithoutIndex(w io.Writer, pi PageInfo) error {
 }
 
 func (pg *custompage) Generate(w io.Writer, pi PageInfo, index Page) error {
-	return pg.GenerateWithoutIndex(w, pi)
+	assert.Assert(index != nil)
+	indexppg, ok := index.(*parsedpage)
+	assert.Assert(ok)
+
+	return pi.Theme().ExecuteCustom(
+		w,
+		pg.template,
+		pg.datawithmoremap(map[string]string{
+			"SiteTitle": indexppg.title,
+		}),
+	)
+}
+
+func (pg *custompage) datawithmoremap(more map[string]string) map[string]string {
+	m := map[string]string{}
+	for k, v := range pg.data {
+		m[k] = v
+	}
+	for k, v := range more {
+		m[k] = v
+	}
+	return m
 }
 
 func (pg *custompage) IsPost() bool { return false }

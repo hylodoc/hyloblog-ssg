@@ -1,6 +1,6 @@
 <html>
 	<head>
-		<title>{{ .Title }}</title>
+		<title>Subscribe | {{ .SiteTitle }}</title>
 
 		<link href="https://fonts.googleapis.com/css?family=Nunito:300,400,700" rel="stylesheet">
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ajusa/lit@latest/dist/lit.css" />
@@ -36,6 +36,7 @@
 	</head>
 	<body>
 		<div class="c">
+			<h1><a style="color: #ccc" href="/">{{ .SiteTitle }}</a></h1>
 			<h2>Subscribe to this blog</h2>
 			<form action="{{ .FormAction }}" method="POST">
 				<div class="row">
