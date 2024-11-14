@@ -23,6 +23,10 @@ func testHandler() error {
 		"HEADER", "FOOTER",
 		map[string]CustomPage{
 			"/sub": NewSubscriberPage("https://google.com"),
+			"/subok": NewMessagePage(
+				"Subscribed",
+				"You have successfully subscribed.",
+			),
 		},
 	)
 	if err != nil {
@@ -35,6 +39,7 @@ func testHandler() error {
 		"/nest-no-ignore/README",
 		"/nest-no-ignore/post",
 		"/sub",
+		"/subok",
 	} {
 		if file, ok := bindings[url]; !ok {
 			return fmt.Errorf("%q not found", url)

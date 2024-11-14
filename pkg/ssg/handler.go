@@ -74,3 +74,10 @@ func NewSubscriberPage(url string) CustomPage {
 		map[string]string{"FormAction": url},
 	}
 }
+
+func NewMessagePage(title, message string) CustomPage {
+	return &custompage{
+		"message.html",
+		map[string]string{"Title": title, "Message": message},
+	}
+}
