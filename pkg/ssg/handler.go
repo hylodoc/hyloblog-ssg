@@ -8,6 +8,42 @@ import (
 	"github.com/xr0-org/progstack-ssg/internal/ast/area/sitefile"
 )
 
+// A Site is the outcome of generating from a hylo directory.
+type Site interface {
+	// The Title of the Site.
+	Title() string
+
+	// The Files that constitute the Site.
+	Bindings() map[string]File
+}
+
+type site struct {
+	title    string
+	bindings map[string]File
+}
+
+func (s *site) Title() string             { return s.title }
+func (s *site) Bindings() map[string]File { return s.bindings }
+
+func GenerateSiteWithBindings(
+	src, target, theme, chromastyle string,
+	head, foot string,
+	custompages map[string]CustomPage,
+) (Site, error) {
+	a, err := area.ParseArea(src, chromastyle)
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse area: %w", err)
+	}
+	if err := a.Inject(toinjectmap(custompages)); err != nil {
+		return nil, fmt.Errorf("injection error: %w", err)
+	}
+	bindings, err := a.GenerateWithBindings(target, theme, head, foot)
+	if err != nil {
+		return nil, fmt.Errorf("cannot generate: %w", err)
+	}
+	return &site{gettitle(a), tofilemap(bindings)}, nil
+}
+
 // A File is any URL-accessible resource in a site.
 type File interface {
 	// Path is the path on disk to the generated File.
@@ -23,31 +59,23 @@ type File interface {
 	PostTime() (time.Time, bool)
 }
 
-func GenerateSiteWithBindings(
-	src, target, theme, chromastyle string,
-	head, foot string,
-	custompages map[string]CustomPage,
-) (map[string]File, error) {
-	a, err := area.ParseArea(src, chromastyle)
-	if err != nil {
-		return nil, fmt.Errorf("cannot parse area: %w", err)
-	}
-	if err := a.Inject(toinjectmap(custompages)); err != nil {
-		return nil, fmt.Errorf("injection error: %w", err)
-	}
-	m1, err := a.GenerateWithBindings(target, theme, head, foot)
-	if err != nil {
-		return nil, fmt.Errorf("cannot generate: %w", err)
-	}
-	m2 := map[string]File{}
+func toinjectmap(m1 map[string]CustomPage) map[string]sitefile.CustomPage {
+	m2 := map[string]sitefile.CustomPage{}
 	for k, v := range m1 {
 		m2[k] = v
 	}
-	return m2, nil
+	return m2
 }
 
-func toinjectmap(m1 map[string]CustomPage) map[string]sitefile.CustomPage {
-	m2 := map[string]sitefile.CustomPage{}
+func gettitle(a *area.Area) string {
+	if s, err := a.Title(); err == nil {
+		return s
+	}
+	return ""
+}
+
+func tofilemap(m1 map[string]sitefile.File) map[string]File {
+	m2 := map[string]File{}
 	for k, v := range m1 {
 		m2[k] = v
 	}

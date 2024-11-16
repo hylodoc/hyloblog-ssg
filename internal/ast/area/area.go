@@ -125,6 +125,13 @@ func includefile(name string) bool {
 	}
 }
 
+func (A *Area) Title() (string, error) {
+	if index, ok := A.pages[indexFile]; ok {
+		return index.Title()
+	}
+	return "", fmt.Errorf("no index file")
+}
+
 func (A *Area) Inject(m map[string]sitefile.CustomPage) error {
 	for url, data := range m {
 		if url[0] != '/' {

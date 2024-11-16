@@ -17,7 +17,7 @@ func testHandler() error {
 	if err != nil {
 		return fmt.Errorf("cannot make tempdir: %w", err)
 	}
-	bindings, err := GenerateSiteWithBindings(
+	s, err := GenerateSiteWithBindings(
 		"test", target,
 		"../../theme/lit", "algol_nu",
 		"HEADER", "FOOTER",
@@ -32,6 +32,7 @@ func testHandler() error {
 	if err != nil {
 		return fmt.Errorf("cannot generate: %w", err)
 	}
+	bindings := s.Bindings()
 	for _, url := range []string{
 		"/",
 		"/abc/def",

@@ -18,6 +18,10 @@ func CustomPage(template string, data map[string]string) *custompage {
 	return &custompage{template, data}
 }
 
+func (pg *custompage) Title() (string, error) {
+	return "", fmt.Errorf("custompage has no title")
+}
+
 func (pg *custompage) Link(path string, pi PageInfo) (string, error) {
 	url, err := filepath.Rel(
 		pi.Root(),

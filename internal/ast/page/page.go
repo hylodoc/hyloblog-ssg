@@ -8,6 +8,7 @@ import (
 )
 
 type Page interface {
+	Title() (string, error)
 	Link(path string, pi PageInfo) (string, error)
 
 	GenerateIndex(w io.Writer, posts []Post, pi PageInfo) error

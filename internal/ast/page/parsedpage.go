@@ -71,6 +71,10 @@ func separate(s string) (*components, error) {
 	}, nil
 }
 
+func (p *parsedpage) Title() (string, error) {
+	return p.title, nil
+}
+
 func (pg *parsedpage) Link(path string, pi PageInfo) (string, error) {
 	dynamiclinks := pi.DynamicLinks()
 	if pg.url != "" {
