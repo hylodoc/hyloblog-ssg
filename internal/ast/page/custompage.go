@@ -75,6 +75,6 @@ func (pg *custompage) AsPost(_, _ string) *Post {
 	return nil
 }
 
-func (pg *custompage) ToFile(path string) sitefile.File {
-	return sitefile.NonPostFile(path)
+func (pg *custompage) ToFile(path string, pi PageInfo) (sitefile.File, error) {
+	return sitefile.NonPostFile(path), nil
 }

@@ -419,7 +419,11 @@ func (A *Area) handlebindings(
 				"cannot make path for %q: %w", name, err,
 			)
 		}
-		m[path] = pagefile(name, dir, pg)
+		file, err := pagefile(pg, name, dir, g)
+		if err != nil {
+			return fmt.Errorf("cannot get page file: %w", err)
+		}
+		m[path] = file
 	}
 	for name := range A.otherfiles {
 		path, err := filehostpath(name, dir, g.Root())
@@ -433,12 +437,14 @@ func (A *Area) handlebindings(
 	return nil
 }
 
-func pagefile(name, dir string, pg page.Page) sitefile.File {
+func pagefile(
+	pg page.Page, name, dir string, g *areainfo.GenInfo,
+) (sitefile.File, error) {
 	filepath := genpagehtmlpath(name, dir)
 	if name == indexFile {
-		return sitefile.NonPostFile(filepath)
+		return sitefile.NonPostFile(filepath), nil
 	}
-	return pg.ToFile(filepath)
+	return pg.ToFile(filepath, g)
 }
 
 type LiveHandler struct {

@@ -52,10 +52,14 @@ type File interface {
 	// IsPost indicates whether or not the File is a post.
 	IsPost() bool
 
-	// Title is the title of the post.
+	// PostTitle is the title of the post.
 	PostTitle() string
 
-	// Time is the timestamp associated with the post, if available.
+	// PostHtml is the body of the post without the header/footer portions
+	// that render ordinarily.
+	PostHtml() string
+
+	// PostTime is the timestamp associated with the post, if available.
 	PostTime() (time.Time, bool)
 }
 

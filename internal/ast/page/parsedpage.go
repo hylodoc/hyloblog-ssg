@@ -271,11 +271,32 @@ func (pg *parsedpage) time() (time.Time, bool) {
 	return t.published, true
 }
 
-func (pg *parsedpage) ToFile(path string) sitefile.File {
-	if time, ok := pg.time(); ok {
-		return sitefile.TimedPostFile(path, pg.title, time)
+func (pg *parsedpage) ToFile(path string, pi PageInfo) (sitefile.File, error) {
+	html, err := pg.barehtml(pi)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get bare html: %w", err)
 	}
-	return sitefile.PostFile(path, pg.title)
+	if time, ok := pg.time(); ok {
+		return sitefile.TimedPostFile(path, pg.title, html, time), nil
+	}
+	return sitefile.PostFile(path, pg.title, html), nil
+}
+
+func (pg *parsedpage) barehtml(pi PageInfo) (string, error) {
+	var b strings.Builder
+	if err := pi.Theme().ExecuteDefault(
+		&b, &theme.DefaultData{
+			Title:   pg.title,
+			Content: pg.doc,
+			Date:    getdate(pg.timing),
+			Authors: pg.a.getauthorsnoindex(),
+			Head:    "",
+			Foot:    "",
+		},
+	); err != nil {
+		return "", fmt.Errorf("cannot execute: %w", err)
+	}
+	return b.String(), nil
 }
 
 func (pg *parsedpage) Generate(w io.Writer, pi PageInfo, index Page) error {

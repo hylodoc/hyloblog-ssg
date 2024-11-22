@@ -12,6 +12,7 @@ type File interface {
 
 	// post details
 	PostTitle() string
+	PostHtml() string
 	PostTime() (time.Time, bool)
 }
 
@@ -20,15 +21,16 @@ type file struct {
 
 	ispost bool
 	title  string
+	html   string
 	time   time.Time
 }
 
-func PostFile(path, title string) File {
-	return &file{path, true, title, time.Time{}}
+func PostFile(path, title, html string) File {
+	return &file{path, true, title, html, time.Time{}}
 }
 
-func TimedPostFile(path, title string, time time.Time) File {
-	return &file{path, true, title, time}
+func TimedPostFile(path, title, html string, time time.Time) File {
+	return &file{path, true, title, html, time}
 }
 
 func NonPostFile(path string) File {
@@ -42,6 +44,12 @@ func (f *file) PostTitle() string {
 	assert.Assert(f.ispost)
 	return f.title
 }
+
+func (f *file) PostHtml() string {
+	assert.Assert(f.ispost)
+	return f.html
+}
+
 func (f *file) PostTime() (time.Time, bool) {
 	assert.Assert(f.ispost)
 	return f.time, !f.time.IsZero()

@@ -18,7 +18,7 @@ type Page interface {
 	IsPost() bool
 	AsPost(category, link string) *Post
 
-	ToFile(path string) sitefile.File
+	ToFile(path string, pi PageInfo) (sitefile.File, error)
 }
 
 type PageInfo interface {
