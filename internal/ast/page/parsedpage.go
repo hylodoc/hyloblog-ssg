@@ -14,6 +14,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/xr0-org/progstack-ssg/internal/assert"
 	"github.com/xr0-org/progstack-ssg/internal/ast/area/sitefile"
+	"github.com/xr0-org/progstack-ssg/internal/ast/page/pandoc"
 	"github.com/xr0-org/progstack-ssg/internal/theme"
 )
 
@@ -276,10 +277,16 @@ func (pg *parsedpage) ToFile(path string, pi PageInfo) (sitefile.File, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot get bare html: %w", err)
 	}
-	if time, ok := pg.time(); ok {
-		return sitefile.TimedPostFile(path, pg.title, html, time), nil
+	text, err := pandoc.ConvertPlaintext(pg.doc)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get plaintext: %w", err)
 	}
-	return sitefile.PostFile(path, pg.title, html), nil
+	if time, ok := pg.time(); ok {
+		return sitefile.TimedPostFile(
+			path, pg.title, html, text, time,
+		), nil
+	}
+	return sitefile.PostFile(path, pg.title, html, text), nil
 }
 
 func (pg *parsedpage) barehtml(pi PageInfo) (string, error) {

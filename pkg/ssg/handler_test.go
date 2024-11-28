@@ -45,7 +45,9 @@ func testHandler() error {
 		if file, ok := bindings[url]; !ok {
 			return fmt.Errorf("%q not found", url)
 		} else {
-			fmt.Println(url, file)
+			if file.IsPost() {
+				fmt.Println(url, file.PostPlaintext())
+			}
 		}
 	}
 	return nil

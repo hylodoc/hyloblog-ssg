@@ -59,6 +59,9 @@ type File interface {
 	// that render ordinarily.
 	PostHtml() string
 
+	// PostPlaintext is the body of the post rendered in plaintext by Pandoc.
+	PostPlaintext() string
+
 	// PostTime is the timestamp associated with the post, if available.
 	PostTime() (time.Time, bool)
 }
