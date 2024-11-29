@@ -13,16 +13,22 @@ type Site interface {
 	// The Title of the Site.
 	Title() string
 
+	// Hash is a unique, deterministic identifier for the site such that
+	// equivalent source directories should produce the same result, and
+	// different ones different ones.
+	Hash() string
+
 	// The Files that constitute the Site.
 	Bindings() map[string]File
 }
 
 type site struct {
-	title    string
-	bindings map[string]File
+	title, hash string
+	bindings    map[string]File
 }
 
 func (s *site) Title() string             { return s.title }
+func (s *site) Hash() string              { return s.hash }
 func (s *site) Bindings() map[string]File { return s.bindings }
 
 func GenerateSiteWithBindings(
@@ -41,7 +47,11 @@ func GenerateSiteWithBindings(
 	if err != nil {
 		return nil, fmt.Errorf("cannot generate: %w", err)
 	}
-	return &site{gettitle(a), tofilemap(bindings)}, nil
+	h, err := a.Hash()
+	if err != nil {
+		return nil, fmt.Errorf("cannot get hash: %w", err)
+	}
+	return &site{gettitle(a), h, tofilemap(bindings)}, nil
 }
 
 // A File is any URL-accessible resource in a site.

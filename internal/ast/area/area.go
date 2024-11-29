@@ -1,14 +1,19 @@
 package area
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
+	"github.com/go-git/go-git/v5"
 	"github.com/gorilla/mux"
 	"github.com/xr0-org/progstack-ssg/internal/assert"
 	"github.com/xr0-org/progstack-ssg/internal/ast/area/areainfo"
@@ -28,6 +33,8 @@ type Area struct {
 	subareas   []Area
 	pages      map[string]page.Page
 	otherfiles map[string]readdir.File
+
+	hash string
 }
 
 func newarea(prefix string) *Area {
@@ -36,11 +43,104 @@ func newarea(prefix string) *Area {
 		[]Area{},
 		map[string]page.Page{},
 		map[string]readdir.File{},
+		"",
 	}
 }
 
+func (A *Area) Hash() (string, error) {
+	if A.hash == "" {
+		return "", fmt.Errorf("no hash")
+	}
+	return A.hash, nil
+}
+
 func ParseArea(dir, chromastyle string) (*Area, error) {
-	return parse(dir, dir, areainfo.NewParseInfo(chromastyle))
+	A, err := parse(dir, dir, areainfo.NewParseInfo(chromastyle))
+	if err != nil {
+		return nil, err
+	}
+	h, err := gethash(dir)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get hash: %w", err)
+	}
+	A.hash = h
+	return A, nil
+}
+
+func gethash(dir string) (string, error) {
+	gitdir, err := getgitdir(dir)
+	if err != nil {
+		if errors.Is(err, errNotGitDir) {
+			return dirhash(dir)
+		}
+		return "", fmt.Errorf("error getting git dir: %w", err)
+	}
+	return getgithash(gitdir)
+}
+
+var errNotGitDir = errors.New("not git dir")
+
+func getgitdir(path string) (string, error) {
+	gitdir := filepath.Join(path, ".git")
+	is, err := isgitdir(gitdir)
+	if err != nil {
+		return "", fmt.Errorf("cannot check: %w", err)
+	}
+	if is {
+		return gitdir, nil
+	}
+	return "", errNotGitDir
+}
+
+func isgitdir(gitdir string) (bool, error) {
+	stat, err := os.Stat(gitdir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return stat.IsDir(), nil
+}
+
+func dirhash(dir string) (string, error) {
+	cmd := exec.Command(
+		"sh", "-c",
+		fmt.Sprintf("tar cf - %s | %s", dir, gethashcmd()),
+	)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf(
+			"run error: %w, stderr: %s", err, stderr.String(),
+		)
+	}
+	return stdout.String(), nil
+}
+
+func gethashcmd() string {
+	if runtime.GOOS == "darwin" {
+		return "shasum -a 256"
+	}
+	return "sha256sum"
+}
+
+func getgithash(gitdir string) (string, error) {
+	repo, err := git.PlainOpen(gitdir)
+	if err != nil {
+		return "", fmt.Errorf("cannot open repo: %w", err)
+	}
+	l, err := repo.Log(&git.LogOptions{})
+	if err != nil {
+		return "", fmt.Errorf("cannot get log: %w", err)
+	}
+	defer l.Close()
+	commit, err := l.Next()
+	if err != nil {
+		return "", fmt.Errorf("cannot get commit: %w", err)
+	}
+	return commit.Hash.String(), nil
 }
 
 func parse(dir, parent string, info *areainfo.ParseInfo) (*Area, error) {

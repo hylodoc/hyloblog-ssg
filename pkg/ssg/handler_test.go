@@ -32,6 +32,7 @@ func testHandler() error {
 	if err != nil {
 		return fmt.Errorf("cannot generate: %w", err)
 	}
+	fmt.Println("hash", s.Hash())
 	bindings := s.Bindings()
 	for _, url := range []string{
 		"/",
