@@ -54,6 +54,16 @@ func GenerateSiteWithBindings(
 	return &site{gettitle(a), h, tofilemap(bindings)}, nil
 }
 
+func GetSiteHash(src string) (string, error) {
+	const defaultChromaStyle = "based"
+
+	a, err := area.ParseArea(src, defaultChromaStyle)
+	if err != nil {
+		return "", fmt.Errorf("cannot parse area: %w", err)
+	}
+	return a.Hash()
+}
+
 // A File is any URL-accessible resource in a site.
 type File interface {
 	// Path is the path on disk to the generated File.
