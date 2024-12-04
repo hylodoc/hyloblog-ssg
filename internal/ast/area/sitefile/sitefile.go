@@ -6,57 +6,66 @@ import (
 	"github.com/xr0-org/progstack-ssg/internal/assert"
 )
 
-type File interface {
+type Resource interface {
 	Path() string
 	IsPost() bool
+	Post() Post
+}
 
-	// post details
-	PostTitle() string
-	PostHtml() string
-	PostPlaintext() string
-	PostTime() (time.Time, bool)
+type Post interface {
+	Title() string
+	Time() (time.Time, bool)
+	HtmlPath() string
+	PlaintextPath() string
 }
 
 type file struct {
-	path string
-
-	ispost          bool
-	title           string
-	html, plaintext string
-	time            time.Time
+	path   string
+	ispost bool
+	post   Post
 }
 
-func PostFile(path, title, html, plaintext string) File {
-	return &file{path, true, title, html, plaintext, time.Time{}}
+func NewPostResource(path string, post Post) Resource {
+	return &file{path, true, post}
 }
 
-func TimedPostFile(path, title, html, plaintext string, time time.Time) File {
-	return &file{path, true, title, html, plaintext, time}
-}
-
-func NonPostFile(path string) File {
-	return &file{path: path}
+func NewNonPostResource(path string) Resource {
+	return &file{path, false, nil}
 }
 
 func (f *file) Path() string { return f.path }
 func (f *file) IsPost() bool { return f.ispost }
-
-func (f *file) PostTitle() string {
-	assert.Assert(f.ispost)
-	return f.title
+func (f *file) Post() Post {
+	assert.Assert(f.IsPost())
+	return f.post
 }
 
-func (f *file) PostHtml() string {
-	assert.Assert(f.ispost)
-	return f.html
+type post struct {
+	title                   string
+	htmlpath, plaintextpath string
+	time                    time.Time
 }
 
-func (f *file) PostPlaintext() string {
-	assert.Assert(f.ispost)
-	return f.plaintext
+func NewPost(title, htmlpath, plaintextpath string) *post {
+	return &post{title, htmlpath, plaintextpath, time.Time{}}
 }
 
-func (f *file) PostTime() (time.Time, bool) {
-	assert.Assert(f.ispost)
-	return f.time, !f.time.IsZero()
+func NewTimedPost(title, htmlpath, plaintextpath string, time time.Time) *post {
+	return &post{title, htmlpath, plaintextpath, time}
+}
+
+func (p *post) Title() string {
+	return p.title
+}
+
+func (p *post) HtmlPath() string {
+	return p.htmlpath
+}
+
+func (p *post) PlaintextPath() string {
+	return p.plaintextpath
+}
+
+func (p *post) Time() (time.Time, bool) {
+	return p.time, !p.time.IsZero()
 }

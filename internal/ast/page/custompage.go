@@ -57,6 +57,14 @@ func (pg *custompage) Generate(w io.Writer, pi PageInfo, index Page) error {
 	)
 }
 
+func (pg *custompage) GenerateEmailHtml(w io.Writer, pi PageInfo) error {
+	return fmt.Errorf("custom page cannot generate email")
+}
+
+func (pg *custompage) GenerateEmailText(w io.Writer) error {
+	return fmt.Errorf("custom page cannot generate email")
+}
+
 func (pg *custompage) datawithmoremap(more map[string]string) map[string]string {
 	m := map[string]string{}
 	for k, v := range pg.data {
@@ -75,6 +83,6 @@ func (pg *custompage) AsPost(_, _ string) *Post {
 	return nil
 }
 
-func (pg *custompage) ToFile(path string, pi PageInfo) (sitefile.File, error) {
-	return sitefile.NonPostFile(path), nil
+func (pg *custompage) ToResource(path, _, _ string) (sitefile.Resource, error) {
+	return sitefile.NewNonPostResource(path), nil
 }

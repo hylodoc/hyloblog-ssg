@@ -14,11 +14,15 @@ type Page interface {
 	GenerateIndex(w io.Writer, posts []Post, pi PageInfo) error
 	Generate(w io.Writer, pi PageInfo, index Page) error
 	GenerateWithoutIndex(w io.Writer, pi PageInfo) error
+	GenerateEmailHtml(w io.Writer, pi PageInfo) error
+	GenerateEmailText(w io.Writer) error
 
 	IsPost() bool
 	AsPost(category, link string) *Post
 
-	ToFile(path string, pi PageInfo) (sitefile.File, error)
+	ToResource(
+		pagepath, emailhtmlpath, emailtextpath string,
+	) (sitefile.Resource, error)
 }
 
 type PageInfo interface {

@@ -47,7 +47,7 @@ func testHandler() error {
 			return fmt.Errorf("%q not found", url)
 		} else {
 			if file.IsPost() {
-				fmt.Println(url, file.PostPlaintext())
+				fmt.Println(url, file.Post().HtmlPath())
 			}
 		}
 	}

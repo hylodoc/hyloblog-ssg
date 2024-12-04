@@ -19,17 +19,17 @@ type Site interface {
 	Hash() string
 
 	// The Files that constitute the Site.
-	Bindings() map[string]File
+	Bindings() map[string]Resource
 }
 
 type site struct {
 	title, hash string
-	bindings    map[string]File
+	bindings    map[string]Resource
 }
 
-func (s *site) Title() string             { return s.title }
-func (s *site) Hash() string              { return s.hash }
-func (s *site) Bindings() map[string]File { return s.bindings }
+func (s *site) Title() string                 { return s.title }
+func (s *site) Hash() string                  { return s.hash }
+func (s *site) Bindings() map[string]Resource { return s.bindings }
 
 func GenerateSiteWithBindings(
 	src, target, theme, chromastyle string,
@@ -64,26 +64,34 @@ func GetSiteHash(src string) (string, error) {
 	return a.Hash()
 }
 
-// A File is any URL-accessible resource in a site.
-type File interface {
-	// Path is the path on disk to the generated File.
+// A Resource is any URL-accessible resource in a site.
+type Resource interface {
+	// Path is the path on disk to the generated file.
 	Path() string
 
-	// IsPost indicates whether or not the File is a post.
+	// IsPost indicates whether or not the Resource is a post.
 	IsPost() bool
 
-	// PostTitle is the title of the post.
-	PostTitle() string
+	// Post contains the Post-specific data of the Resource. If the Resource is not
+	// a post (i.e. !IsPost()) this will result in assertion failure.
+	Post() Post
+}
 
-	// PostHtml is the body of the post without the header/footer portions
-	// that render ordinarily.
-	PostHtml() string
+type Post interface {
+	// Title is the title of the post.
+	Title() string
 
-	// PostPlaintext is the body of the post rendered in plaintext by Pandoc.
-	PostPlaintext() string
+	// Time is the timestamp associated with the post, if available.
+	Time() (time.Time, bool)
 
-	// PostTime is the timestamp associated with the post, if available.
-	PostTime() (time.Time, bool)
+	// HtmlPath is the path on disk to a file containing the HTML body
+	// of the post without the header/footer portions that render
+	// ordinarily.
+	HtmlPath() string
+
+	// PlaintextPath is the path on disk to a file containing body of
+	// the post rendered in plaintext by Pandoc.
+	PlaintextPath() string
 }
 
 func toinjectmap(m1 map[string]CustomPage) map[string]sitefile.CustomPage {
@@ -101,13 +109,25 @@ func gettitle(a *area.Area) string {
 	return ""
 }
 
-func tofilemap(m1 map[string]sitefile.File) map[string]File {
-	m2 := map[string]File{}
+func tofilemap(m1 map[string]sitefile.Resource) map[string]Resource {
+	m2 := map[string]Resource{}
 	for k, v := range m1 {
-		m2[k] = v
+		m2[k] = newresource(v)
 	}
 	return m2
 }
+
+type resource struct {
+	rsc sitefile.Resource
+}
+
+func newresource(rsc sitefile.Resource) Resource {
+	return &resource{rsc}
+}
+
+func (r *resource) Path() string { return r.rsc.Path() }
+func (r *resource) IsPost() bool { return r.rsc.IsPost() }
+func (r *resource) Post() Post   { return r.rsc.Post() }
 
 // A CustomPage is a page generated without existing in the source directory.
 type CustomPage interface {

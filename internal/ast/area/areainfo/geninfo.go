@@ -55,7 +55,7 @@ func (info *GenInfo) DynamicLinks() bool {
 	switch info.purpose {
 	case PurposeStaticServe:
 		return false
-	case PurposeDynamicServe:
+	case PurposeDynamicServe, PurposeBind:
 		return true
 	default:
 		assert.Assert(false)
@@ -67,10 +67,12 @@ func (info *GenInfo) Theme() *theme.Theme { return info.theme }
 func (info *GenInfo) Root() string        { return info.rootdir }
 func (info *GenInfo) Head() string        { return info.head }
 func (info *GenInfo) Foot() string        { return info.foot }
+func (info *GenInfo) Binding() bool       { return info.purpose == PurposeBind }
 
 type Purpose int
 
 const (
 	PurposeStaticServe Purpose = iota
 	PurposeDynamicServe
+	PurposeBind
 )

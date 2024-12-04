@@ -272,27 +272,28 @@ func (pg *parsedpage) time() (time.Time, bool) {
 	return t.published, true
 }
 
-func (pg *parsedpage) ToFile(path string, pi PageInfo) (sitefile.File, error) {
-	html, err := pg.barehtml(pi)
-	if err != nil {
-		return nil, fmt.Errorf("cannot get bare html: %w", err)
-	}
-	text, err := pandoc.ConvertPlaintext(pg.doc)
-	if err != nil {
-		return nil, fmt.Errorf("cannot get plaintext: %w", err)
-	}
+func (pg *parsedpage) ToResource(
+	pagepath, emailhtmlpath, emailtextpath string,
+) (sitefile.Resource, error) {
 	if time, ok := pg.time(); ok {
-		return sitefile.TimedPostFile(
-			path, pg.title, html, text, time,
+		return sitefile.NewPostResource(
+			pagepath,
+			sitefile.NewTimedPost(
+				pg.title, emailhtmlpath, emailtextpath, time,
+			),
 		), nil
 	}
-	return sitefile.PostFile(path, pg.title, html, text), nil
+	return sitefile.NewPostResource(
+		pagepath,
+		sitefile.NewPost(pg.title, emailhtmlpath, emailtextpath),
+	), nil
 }
 
-func (pg *parsedpage) barehtml(pi PageInfo) (string, error) {
-	var b strings.Builder
+func (pg *parsedpage) GenerateEmailHtml(
+	w io.Writer, pi PageInfo,
+) error {
 	if err := pi.Theme().ExecuteDefault(
-		&b, &theme.DefaultData{
+		w, &theme.DefaultData{
 			Title:   pg.title,
 			Content: pg.doc,
 			Date:    getdate(pg.timing),
@@ -301,9 +302,20 @@ func (pg *parsedpage) barehtml(pi PageInfo) (string, error) {
 			Foot:    "",
 		},
 	); err != nil {
-		return "", fmt.Errorf("cannot execute: %w", err)
+		return fmt.Errorf("cannot execute: %w", err)
 	}
-	return b.String(), nil
+	return nil
+}
+
+func (pg *parsedpage) GenerateEmailText(w io.Writer) error {
+	text, err := pandoc.ConvertPlaintext(pg.doc)
+	if err != nil {
+		return fmt.Errorf("cannot get plaintext: %w", err)
+	}
+	if _, err := w.Write([]byte(text)); err != nil {
+		return fmt.Errorf("write error: %w", err)
+	}
+	return nil
 }
 
 func (pg *parsedpage) Generate(w io.Writer, pi PageInfo, index Page) error {

@@ -289,7 +289,7 @@ func (A *Area) generate(target string, g *areainfo.GenInfo) error {
 		}
 	}
 	for name, page := range A.pages {
-		if err := A.generatepage(name, dir, page, g); err != nil {
+		if err := A.generatepagefiles(name, dir, page, g); err != nil {
 			return fmt.Errorf(
 				"cannot generate page: %q: %w", name, err,
 			)
@@ -303,10 +303,39 @@ func (A *Area) generate(target string, g *areainfo.GenInfo) error {
 	return nil
 }
 
+func (A *Area) generatepagefiles(
+	name, dir string, page page.Page, g *areainfo.GenInfo,
+) error {
+	if err := A.generatepage(name, dir, page, g); err != nil {
+		return fmt.Errorf("page: %w", err)
+	}
+	if !g.Binding() || !page.IsPost() {
+		// we only generate emails when binding posts
+		return nil
+	}
+	f_html, err := os.Create(genemailhtmlpath(name, dir))
+	if err != nil {
+		return fmt.Errorf("html email file: %w", err)
+	}
+	defer f_html.Close()
+	if err := page.GenerateEmailHtml(f_html, g); err != nil {
+		return fmt.Errorf("generate html email: %w", err)
+	}
+	f_text, err := os.Create(genemailtextpath(name, dir))
+	if err != nil {
+		return fmt.Errorf("text email file: %w", err)
+	}
+	defer f_text.Close()
+	if err := page.GenerateEmailText(f_text); err != nil {
+		return fmt.Errorf("generate text email: %w", err)
+	}
+	return nil
+}
+
 func (A *Area) generatepage(
 	name, dir string, page page.Page, g *areainfo.GenInfo,
 ) error {
-	f, err := os.Create(genpagehtmlpath(name, dir))
+	f, err := os.Create(genpagepath(name, dir))
 	if err != nil {
 		return fmt.Errorf("cannot create file: %w", err)
 	}
@@ -320,8 +349,16 @@ func (A *Area) generatepage(
 	return page.GenerateWithoutIndex(f, g)
 }
 
-func genpagehtmlpath(name, dir string) string {
+func genpagepath(name, dir string) string {
 	return filepath.Join(dir, replaceext(name, ".html"))
+}
+
+func genemailhtmlpath(name, dir string) string {
+	return filepath.Join(dir, replaceext(name, "_email.html"))
+}
+
+func genemailtextpath(name, dir string) string {
+	return filepath.Join(dir, replaceext(name, "_email.txt"))
 }
 
 func replaceext(path, newext string) string {
@@ -430,7 +467,7 @@ func (A *Area) registerhandlers(
 				"cannot make path for %q: %w", name, err,
 			)
 		}
-		mux.HandleFunc(path, filehandler(genpagehtmlpath(name, dir)))
+		mux.HandleFunc(path, filehandler(genpagepath(name, dir)))
 	}
 	for name := range A.otherfiles {
 		path, err := filehostpath(name, dir, g.Root())
@@ -478,18 +515,18 @@ func filehandler(path string) http.HandlerFunc {
 
 func (A *Area) GenerateWithBindings(
 	target, themedir, head, foot string,
-) (map[string]sitefile.File, error) {
+) (map[string]sitefile.Resource, error) {
 	thm, err := theme.ParseTheme(themedir)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse theme: %w", err)
 	}
 	g := areainfo.NewGenInfo(
-		thm, target, areainfo.PurposeDynamicServe,
+		thm, target, areainfo.PurposeBind,
 	).WithHeadFoot(head, foot)
 	if err := A.generate(target, g); err != nil {
 		return nil, fmt.Errorf("cannot generate: %w", err)
 	}
-	bindings := map[string]sitefile.File{}
+	bindings := map[string]sitefile.Resource{}
 	if err := A.handlebindings(target, g, bindings); err != nil {
 		return nil, fmt.Errorf("cannot get bindings: %w", err)
 	}
@@ -497,7 +534,7 @@ func (A *Area) GenerateWithBindings(
 }
 
 func (A *Area) handlebindings(
-	target string, g *areainfo.GenInfo, m map[string]sitefile.File,
+	target string, g *areainfo.GenInfo, m map[string]sitefile.Resource,
 ) error {
 	if index, ok := A.pages[indexFile]; ok {
 		g = g.WithNewIndex(index)
@@ -532,19 +569,23 @@ func (A *Area) handlebindings(
 				"cannot make path for %q: %w", name, err,
 			)
 		}
-		m[path] = sitefile.NonPostFile(filepath.Join(dir, name))
+		m[path] = sitefile.NewNonPostResource(filepath.Join(dir, name))
 	}
 	return nil
 }
 
 func pagefile(
 	pg page.Page, name, dir string, g *areainfo.GenInfo,
-) (sitefile.File, error) {
-	filepath := genpagehtmlpath(name, dir)
+) (sitefile.Resource, error) {
+	pagepath := genpagepath(name, dir)
 	if name == indexFile {
-		return sitefile.NonPostFile(filepath), nil
+		return sitefile.NewNonPostResource(pagepath), nil
 	}
-	return pg.ToFile(filepath, g)
+	return pg.ToResource(
+		pagepath,
+		genemailhtmlpath(name, dir),
+		genemailtextpath(name, dir),
+	)
 }
 
 type LiveHandler struct {
