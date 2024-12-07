@@ -22,6 +22,7 @@ type parsedpage struct {
 	title, url string
 	timing     *timing
 	doc        string
+	rawmd      string
 	a          authoring
 }
 
@@ -47,6 +48,7 @@ func ParsePage(path, chromastyle string) (Page, error) {
 		url:    m.URL,
 		timing: m.timing(),
 		doc:    mdpage.content,
+		rawmd:  components.content,
 		a:      *m.authoring(),
 	}, nil
 }
@@ -308,14 +310,7 @@ func (pg *parsedpage) GenerateEmailHtml(
 }
 
 func (pg *parsedpage) GenerateEmailText(w io.Writer) error {
-	text, err := pandoc.ConvertPlaintext(pg.doc)
-	if err != nil {
-		return fmt.Errorf("cannot get plaintext: %w", err)
-	}
-	if _, err := w.Write([]byte(text)); err != nil {
-		return fmt.Errorf("write error: %w", err)
-	}
-	return nil
+	return pandoc.ConvertPlaintext(pg.rawmd, w)
 }
 
 func (pg *parsedpage) Generate(w io.Writer, pi PageInfo, index Page) error {

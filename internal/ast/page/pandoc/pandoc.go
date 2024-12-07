@@ -3,25 +3,25 @@ package pandoc
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os/exec"
-	"strings"
 )
 
-func ConvertPlaintext(markdown string) (string, error) {
+func ConvertPlaintext(markdown string, stdout io.Writer) error {
 	cmd := exec.Command(
 		"pandoc",
 		"-t", "plain",
-		"--columns", "72",
+		"--columns=72",
 	)
 	cmd.Stdin = bytes.NewBufferString(markdown)
-	var stdout, stderr strings.Builder
-	cmd.Stdout = &stdout
+	cmd.Stdout = stdout
+	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("exec error: %w", err)
+		return fmt.Errorf("exec error: %w", err)
 	}
 	if stderr.Len() > 0 {
-		return "", fmt.Errorf("stderr: %s", stderr.String())
+		return fmt.Errorf("stderr: %s", stderr.String())
 	}
-	return stdout.String(), nil
+	return nil
 }
