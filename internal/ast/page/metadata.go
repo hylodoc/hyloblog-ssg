@@ -10,8 +10,8 @@ import (
 
 type metadata struct {
 	URL         string               `yaml:"url"`
-	Published   parsabletime         `yaml:"published"`
-	Updated     parsabletime         `yaml:"updated"`
+	Published   *parsabletime        `yaml:"published"`
+	Updated     *parsabletime        `yaml:"updated"`
 	Author      []string             `yaml:"author"`
 	AuthorDefs  map[string]authordef `yaml:"authors"`
 	ChromaStyle string               `yaml:"chroma"`
@@ -39,7 +39,7 @@ func confirmurlvalid(u string) error {
 }
 
 func (m *metadata) timing() *timing {
-	published, updated := time.Time(m.Published), time.Time(m.Updated)
+	published, updated := totime(m.Published), totime(m.Updated)
 	if published.IsZero() {
 		return nil
 	}
@@ -47,6 +47,13 @@ func (m *metadata) timing() *timing {
 		return &timing{published, published}
 	}
 	return &timing{published, updated}
+}
+
+func totime(t *parsabletime) time.Time {
+	if t == nil {
+		return time.Time{}
+	}
+	return time.Time(*t)
 }
 
 func (m *metadata) authoring() *authoring {
