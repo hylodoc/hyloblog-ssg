@@ -1,6 +1,7 @@
 package ssg
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -31,6 +32,10 @@ func (s *site) Title() string                 { return s.title }
 func (s *site) Hash() string                  { return s.hash }
 func (s *site) Bindings() map[string]Resource { return s.bindings }
 
+var (
+	ErrTheme = errors.New("theme error")
+)
+
 func GenerateSiteWithBindings(
 	src, target, theme, chromastyle string,
 	head, foot string,
@@ -45,6 +50,9 @@ func GenerateSiteWithBindings(
 	}
 	bindings, err := a.GenerateWithBindings(target, theme, head, foot)
 	if err != nil {
+		if errors.Is(err, theme.ErrNoCustomPageTemplate) {
+			return nil, fmt.Errorf("%w: %w", ErrTheme, err)
+		}
 		return nil, fmt.Errorf("cannot generate: %w", err)
 	}
 	h, err := a.Hash()

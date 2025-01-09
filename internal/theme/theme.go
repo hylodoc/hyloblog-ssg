@@ -1,6 +1,7 @@
 package theme
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -60,12 +61,14 @@ func (thm *Theme) ExecuteDefault(w io.Writer, data *DefaultData) error {
 	return thm.def.Execute(w, data)
 }
 
+var ErrNoCustomPageTemplate = errors.New("no custom page template")
+
 func (thm *Theme) ExecuteCustom(
 	w io.Writer, tmplpath string, data interface{},
 ) error {
 	tmpl, err := template.ParseFiles(filepath.Join(thm.dir, tmplpath))
 	if err != nil {
-		return fmt.Errorf("cannot get template: %w", err)
+		return fmt.Errorf("%w: %w", ErrNoCustomPageTemplate, err)
 	}
 	return tmpl.Execute(w, data)
 }
