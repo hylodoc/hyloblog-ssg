@@ -7,6 +7,7 @@ import (
 
 	"github.com/xr0-org/progstack-ssg/internal/ast/area"
 	"github.com/xr0-org/progstack-ssg/internal/ast/area/sitefile"
+	"github.com/xr0-org/progstack-ssg/internal/theme"
 )
 
 // A Site is the outcome of generating from a hylo directory.
@@ -37,7 +38,7 @@ var (
 )
 
 func GenerateSiteWithBindings(
-	src, target, theme, chromastyle string,
+	src, target, themeName, chromastyle string,
 	head, foot string,
 	custompages map[string]CustomPage,
 ) (Site, error) {
@@ -48,7 +49,7 @@ func GenerateSiteWithBindings(
 	if err := a.Inject(toinjectmap(custompages)); err != nil {
 		return nil, fmt.Errorf("injection error: %w", err)
 	}
-	bindings, err := a.GenerateWithBindings(target, theme, head, foot)
+	bindings, err := a.GenerateWithBindings(target, themeName, head, foot)
 	if err != nil {
 		if errors.Is(err, theme.ErrNoCustomPageTemplate) {
 			return nil, fmt.Errorf("%w: %w", ErrTheme, err)
