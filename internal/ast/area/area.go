@@ -218,7 +218,7 @@ func parsepage(path string, info *areainfo.ParseInfo) (page.Page, error) {
 
 func includefile(name string) bool {
 	switch filepath.Ext(name) {
-	case ".png", ".jpg", ".jpeg", ".gif":
+	case ".png", ".jpg", ".jpeg", ".svg", ".gif":
 		return true
 	default:
 		return false
