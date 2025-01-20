@@ -1,6 +1,6 @@
 package main
 
-import "github.com/xr0-org/progstack-ssg/cmd"
+import "github.com/knuthic/knu/cmd"
 
 func main() {
 	cmd.Execute()

@@ -5,8 +5,8 @@ import (
 	"io"
 	"path/filepath"
 
-	"github.com/xr0-org/progstack-ssg/internal/assert"
-	"github.com/xr0-org/progstack-ssg/internal/ast/area/sitefile"
+	"github.com/knuthic/knu/internal/assert"
+	"github.com/knuthic/knu/internal/ast/area/sitefile"
 )
 
 type custompage struct {

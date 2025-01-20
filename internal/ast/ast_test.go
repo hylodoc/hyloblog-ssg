@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/xr0-org/progstack-ssg/internal/ast/area"
+	"github.com/knuthic/knu/internal/ast/area"
 )
 
 func TestParse(t *testing.T) {

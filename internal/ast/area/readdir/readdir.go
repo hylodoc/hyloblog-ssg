@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/xr0-org/progstack-ssg/internal/assert"
+	"github.com/knuthic/knu/internal/assert"
 )
 
 type Directory interface {

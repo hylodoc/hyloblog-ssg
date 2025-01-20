@@ -1,7 +1,7 @@
 package page
 
 import (
-	"github.com/xr0-org/progstack-ssg/internal/theme"
+	"github.com/knuthic/knu/internal/theme"
 )
 
 // An authoring represents all the information regarding the author(s) of a page

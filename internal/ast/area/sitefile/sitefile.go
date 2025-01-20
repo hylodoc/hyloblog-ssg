@@ -3,7 +3,7 @@ package sitefile
 import (
 	"time"
 
-	"github.com/xr0-org/progstack-ssg/internal/assert"
+	"github.com/knuthic/knu/internal/assert"
 )
 
 type Resource interface {

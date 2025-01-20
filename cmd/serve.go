@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/xr0-org/progstack-ssg/internal/ast/area"
+	"github.com/knuthic/knu/internal/ast/area"
 )
 
 var serveCmd = &cobra.Command{

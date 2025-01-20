@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/xr0-org/progstack-ssg/internal/ast/area"
-	"github.com/xr0-org/progstack-ssg/internal/ast/area/sitefile"
-	"github.com/xr0-org/progstack-ssg/internal/theme"
+	"github.com/knuthic/knu/internal/ast/area"
+	"github.com/knuthic/knu/internal/ast/area/sitefile"
+	"github.com/knuthic/knu/internal/theme"
 )
 
 // A Site is the outcome of generating from a hylo directory.

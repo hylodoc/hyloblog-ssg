@@ -1,4 +1,4 @@
-module github.com/xr0-org/progstack-ssg
+module github.com/knuthic/knu
 
 go 1.21.1
 

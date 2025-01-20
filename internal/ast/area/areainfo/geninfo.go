@@ -1,9 +1,9 @@
 package areainfo
 
 import (
-	"github.com/xr0-org/progstack-ssg/internal/assert"
-	"github.com/xr0-org/progstack-ssg/internal/ast/page"
-	"github.com/xr0-org/progstack-ssg/internal/theme"
+	"github.com/knuthic/knu/internal/assert"
+	"github.com/knuthic/knu/internal/ast/page"
+	"github.com/knuthic/knu/internal/theme"
 )
 
 type GenInfo struct {

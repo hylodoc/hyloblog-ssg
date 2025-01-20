@@ -15,17 +15,17 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/gorilla/mux"
-	"github.com/xr0-org/progstack-ssg/internal/assert"
-	"github.com/xr0-org/progstack-ssg/internal/ast/area/areainfo"
-	"github.com/xr0-org/progstack-ssg/internal/ast/area/readdir"
-	"github.com/xr0-org/progstack-ssg/internal/ast/area/sitefile"
-	"github.com/xr0-org/progstack-ssg/internal/ast/page"
-	"github.com/xr0-org/progstack-ssg/internal/theme"
+	"github.com/knuthic/knu/internal/assert"
+	"github.com/knuthic/knu/internal/ast/area/areainfo"
+	"github.com/knuthic/knu/internal/ast/area/readdir"
+	"github.com/knuthic/knu/internal/ast/area/sitefile"
+	"github.com/knuthic/knu/internal/ast/page"
+	"github.com/knuthic/knu/internal/theme"
 )
 
 const (
 	indexFile  = "index.md"
-	ignoreFile = ".progstackignore"
+	ignoreFile = ".knuignore"
 )
 
 type Area struct {

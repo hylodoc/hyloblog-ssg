@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/xr0-org/progstack-ssg/internal/assert"
+	"github.com/knuthic/knu/internal/assert"
 )
 
 type ParseInfo struct {
