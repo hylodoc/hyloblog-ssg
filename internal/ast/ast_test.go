@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/knuthic/knu/internal/ast/area"
+	"github.com/hylodoc/hylodoc-ssg/internal/ast/area"
 )
 
 func TestParse(t *testing.T) {

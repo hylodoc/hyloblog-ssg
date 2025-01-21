@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"github.com/knuthic/knu/internal/ast/area"
-	"github.com/knuthic/knu/internal/ast/area/areainfo"
+	"github.com/hylodoc/hylodoc-ssg/internal/ast/area"
+	"github.com/hylodoc/hylodoc-ssg/internal/ast/area/areainfo"
 )
 
 var genCmd = &cobra.Command{

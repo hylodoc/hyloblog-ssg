@@ -1,6 +1,6 @@
 package main
 
-import "github.com/knuthic/knu/cmd"
+import "github.com/hylodoc/hylodoc-ssg/cmd"
 
 func main() {
 	cmd.Execute()

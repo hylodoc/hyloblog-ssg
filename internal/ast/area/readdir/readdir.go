@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/knuthic/knu/internal/assert"
+	"github.com/hylodoc/hylodoc-ssg/internal/assert"
 )
 
 type Directory interface {

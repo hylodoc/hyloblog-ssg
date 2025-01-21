@@ -15,17 +15,17 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/gorilla/mux"
-	"github.com/knuthic/knu/internal/assert"
-	"github.com/knuthic/knu/internal/ast/area/areainfo"
-	"github.com/knuthic/knu/internal/ast/area/readdir"
-	"github.com/knuthic/knu/internal/ast/area/sitefile"
-	"github.com/knuthic/knu/internal/ast/page"
-	"github.com/knuthic/knu/internal/theme"
+	"github.com/hylodoc/hylodoc-ssg/internal/assert"
+	"github.com/hylodoc/hylodoc-ssg/internal/ast/area/areainfo"
+	"github.com/hylodoc/hylodoc-ssg/internal/ast/area/readdir"
+	"github.com/hylodoc/hylodoc-ssg/internal/ast/area/sitefile"
+	"github.com/hylodoc/hylodoc-ssg/internal/ast/page"
+	"github.com/hylodoc/hylodoc-ssg/internal/theme"
 )
 
 const (
 	indexFile  = "index.md"
-	ignoreFile = ".knuignore"
+	ignoreFile = ".hylodocignore"
 )
 
 type Area struct {

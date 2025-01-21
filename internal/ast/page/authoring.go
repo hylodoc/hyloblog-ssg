@@ -1,7 +1,7 @@
 package page
 
 import (
-	"github.com/knuthic/knu/internal/theme"
+	"github.com/hylodoc/hylodoc-ssg/internal/theme"
 )
 
 // An authoring represents all the information regarding the author(s) of a page

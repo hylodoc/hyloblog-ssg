@@ -1,9 +1,9 @@
 package areainfo
 
 import (
-	"github.com/knuthic/knu/internal/assert"
-	"github.com/knuthic/knu/internal/ast/page"
-	"github.com/knuthic/knu/internal/theme"
+	"github.com/hylodoc/hylodoc-ssg/internal/assert"
+	"github.com/hylodoc/hylodoc-ssg/internal/ast/page"
+	"github.com/hylodoc/hylodoc-ssg/internal/theme"
 )
 
 type GenInfo struct {

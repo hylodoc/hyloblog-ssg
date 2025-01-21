@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/knuthic/knu/internal/assert"
+	"github.com/hylodoc/hylodoc-ssg/internal/assert"
 )
 
 type ParseInfo struct {

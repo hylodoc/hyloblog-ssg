@@ -1,4 +1,4 @@
-module github.com/knuthic/knu
+module github.com/hylodoc/hylodoc-ssg
 
 go 1.21.1
 
