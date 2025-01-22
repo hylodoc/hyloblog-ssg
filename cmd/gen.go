@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"github.com/hylodoc/hylodoc-ssg/internal/ast/area"
-	"github.com/hylodoc/hylodoc-ssg/internal/ast/area/areainfo"
+	"github.com/hylodoc/hylodoc/internal/ast/area"
+	"github.com/hylodoc/hylodoc/internal/ast/area/areainfo"
 )
 
 var genCmd = &cobra.Command{

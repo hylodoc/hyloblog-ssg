@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hylodoc/hylodoc-ssg/internal/ast/area"
-	"github.com/hylodoc/hylodoc-ssg/internal/ast/area/sitefile"
-	"github.com/hylodoc/hylodoc-ssg/internal/theme"
+	"github.com/hylodoc/hylodoc/internal/ast/area"
+	"github.com/hylodoc/hylodoc/internal/ast/area/sitefile"
+	"github.com/hylodoc/hylodoc/internal/theme"
 )
 
 // A Site is the outcome of generating from a hylo directory.

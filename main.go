@@ -1,6 +1,6 @@
 package main
 
-import "github.com/hylodoc/hylodoc-ssg/cmd"
+import "github.com/hylodoc/hylodoc/cmd"
 
 func main() {
 	cmd.Execute()

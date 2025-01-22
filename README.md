@@ -1,6 +1,6 @@
-# Hylodoc SSG
+# Hylodoc
 
-An SSG that emphasises extreme simplicity.
+Hylodoc is an SSG that emphasises extreme simplicity.
 
 It works by crawling the provided directory recursively, treating each Markdown
 file it finds as a page.

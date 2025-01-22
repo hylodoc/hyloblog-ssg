@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hylodoc/hylodoc-ssg/internal/ast/area"
+	"github.com/hylodoc/hylodoc/internal/ast/area"
 )
 
 func TestParse(t *testing.T) {

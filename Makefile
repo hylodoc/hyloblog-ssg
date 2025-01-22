@@ -2,7 +2,7 @@ GO = go
 BIN = ${CURDIR}/bin
 SOURCES := $(shell find $(CURDIR) -name '*.go')
 
-SSG = $(BIN)/hylodoc-ssg
+SSG = $(BIN)/hylodoc
 
 $(SSG): $(BIN) $(SOURCES)
 	@printf 'GO\t$@\n'
