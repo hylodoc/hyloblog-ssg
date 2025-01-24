@@ -38,6 +38,7 @@ func parsemdpage(content, style string) (*mdpage, error) {
 			&katex.Extender{},
 		),
 		goldmark.WithExtensions(extension.NewTable()),
+		goldmark.WithExtensions(extension.GFM),
 	)
 	doc := g.Parser().Parse(text.NewReader([]byte(content)))
 	s, err := render(g.Renderer(), doc, content)
