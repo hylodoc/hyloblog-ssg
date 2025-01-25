@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>{{ .Title }}</title>
+		<title>{{ .Title }} | {{ .SiteTitle }}</title>
 
 		<link rel="stylesheet" href="https://latex.vercel.app/style.css">
 		<style>
@@ -28,6 +28,7 @@
 			      crossorigin="anonymous" onload="renderMathInElement(document.body);"></script>
 	</head>
 	<body class="libertinus">
-		{{ .Content }}
+		<h1><a style="color: #ccc" href="/">{{ .SiteTitle }}</a></h1>
+		{{ .Message }}
 	</body>
 </html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Subscribe | {{ .SiteTitle }}</title>
+
+		<link rel="stylesheet" href="https://latex.vercel.app/style.css">
+		<style>
+			h2 a,h3 a,h4 a,h5 a,h6 a {
+				opacity: 0;
+				transition: opacity 0.1s ease-in-out;
+			}
+			h2:hover a,h3:hover a,h4:hover a,h5:hover a,h6:hover a {
+				opacity: 1;
+			}
+			h1,h2,h3,h4,h5,h6 {
+				cursor: default;
+			}
+		</style>
+
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"
+		       integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+"
+		       crossorigin="anonymous">
+		<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"
+			      integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg"
+			      crossorigin="anonymous"></script>
+		<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+			      integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk"
+			      crossorigin="anonymous" onload="renderMathInElement(document.body);"></script>
+	</head>
+	<body class="libertinus">
+		<h1><a style="color: #ccc" href="/">{{ .SiteTitle }}</a></h1>
+		<h2>Subscribe to this blog</h2>
+		<form action="{{ .FormAction }}" method="POST">
+			<div class="row">
+			    <div class="col">
+				Email
+				<input name="email" class="card w-100" type="email" placeholder="me@domain.com">
+			    </div>
+			</div>
+			<div class="row">
+			    <hr>
+			    <button class="btn primary">Submit</button>
+			</div>
+		</form>
+	</body>
+</html>
