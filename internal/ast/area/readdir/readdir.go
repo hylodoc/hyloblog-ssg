@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/hylodoc/hylodoc/internal/assert"
+	"github.com/hylodoc/hyloblog-ssg/internal/assert"
 )
 
 type Directory interface {

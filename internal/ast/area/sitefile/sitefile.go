@@ -3,7 +3,7 @@ package sitefile
 import (
 	"time"
 
-	"github.com/hylodoc/hylodoc/internal/assert"
+	"github.com/hylodoc/hyloblog-ssg/internal/assert"
 )
 
 type Resource interface {

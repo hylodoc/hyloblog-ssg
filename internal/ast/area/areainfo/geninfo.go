@@ -1,9 +1,9 @@
 package areainfo
 
 import (
-	"github.com/hylodoc/hylodoc/internal/assert"
-	"github.com/hylodoc/hylodoc/internal/ast/page"
-	"github.com/hylodoc/hylodoc/internal/theme"
+	"github.com/hylodoc/hyloblog-ssg/internal/assert"
+	"github.com/hylodoc/hyloblog-ssg/internal/ast/page"
+	"github.com/hylodoc/hyloblog-ssg/internal/theme"
 )
 
 type GenInfo struct {
