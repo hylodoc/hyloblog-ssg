@@ -12,10 +12,10 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/hylodoc/hylodoc/internal/assert"
-	"github.com/hylodoc/hylodoc/internal/ast/area/sitefile"
-	"github.com/hylodoc/hylodoc/internal/ast/page/pandoc"
-	"github.com/hylodoc/hylodoc/internal/theme"
+	"github.com/hylodoc/hyloblog-ssg/internal/assert"
+	"github.com/hylodoc/hyloblog-ssg/internal/ast/area/sitefile"
+	"github.com/hylodoc/hyloblog-ssg/internal/ast/page/pandoc"
+	"github.com/hylodoc/hyloblog-ssg/internal/theme"
 )
 
 type parsedpage struct {

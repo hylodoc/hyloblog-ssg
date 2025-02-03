@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/hylodoc/hylodoc/internal/assert"
+	"github.com/hylodoc/hyloblog-ssg/internal/assert"
 )
 
 type ParseInfo struct {

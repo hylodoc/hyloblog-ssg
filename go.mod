@@ -1,4 +1,4 @@
-module github.com/hylodoc/hylodoc
+module github.com/hylodoc/hyloblog-ssg
 
 go 1.21.1
 
